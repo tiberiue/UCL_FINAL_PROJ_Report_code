@@ -14,6 +14,8 @@ In order to run new code that reads config files, you need to:
 2. You need to do the following:
 
 cd src/
+
+
 python class_train.py configs/config_class_train.yaml  
 python adv_train.py configs/config_adv_train.yaml  
 python combined_train.py configs/config_combined_train.yaml  
