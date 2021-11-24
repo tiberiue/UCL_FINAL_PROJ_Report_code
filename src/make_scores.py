@@ -60,23 +60,6 @@ if __name__ == "__main__":
     print("Evaluating on {} files with {} entries in total.".format(len(files), nentries_total))
 
 
-    def create_train_dataset_fulld_new(z, k, d, edge1, edge2, label):
-        graphs = []
-        for i in range(len(z)):
-            if i%10000 ==0:
-                print ("Loading event:",i)
-            if (len(edge1[i])== 0) or (len(edge2[i])== 0):
-                edge = torch.tensor(np.array([edge1[i-1], edge2[i-1]]) , dtype=torch.long)
-            else:
-                edge = torch.tensor(np.array([edge1[i], edge2[i]]) , dtype=torch.long)
-            vec = []
-            vec.append(np.array([d[i], z[i], k[i]]).T)
-            vec = np.array(vec)
-            vec = np.squeeze(vec)
-            graphs.append(Data(x=torch.tensor(vec, dtype=torch.float), edge_index=edge, y=torch.tensor(label[i], dtype=torch.float)))
-        return graphs
-
-
     #Load tf keras model
     # jet_type = "Akt10RecoChargedJet" #track jets
     jet_type = "Akt10UFOJet" #UFO jets
