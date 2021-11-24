@@ -43,10 +43,10 @@ outdir = "/sps/atlas/k/khandoga/Scores/"
 #path = "/sps/atlas/k/khandoga/TrainGNN/Models/LundNet_ufob_e010_0.12276.pt"
 #path = "/sps/atlas/k/khandoga/TrainGNN/Models/class_neg_lambda10_jsd_loce037_-1.96575_comb_.pt"
 #path = "/sps/atlas/k/khandoga/TrainGNN/Models/class_neg_grad05_jsd_longe112_-2.01732_comb_.pt"
-path = "/sps/atlas/k/khandoga/TrainGNN/Models/class_grad3_lossp0.008_lrr0.001_s50e026_0.05661_comb_.pt"
+path = "/sps/atlas/k/khandoga/TrainGNN/Models/class_grad3_lossp0.008_lrr0.001_s50e027_0.05705_comb_.pt"
 
 #model_name = "LundTest_big"
-model_name = "LundTest_adv_e026_0.05661"    
+model_name = "LundTest_adv_e027_0.05705"    
 
     #input TTree name
 
