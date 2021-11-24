@@ -12,11 +12,11 @@ In order to run new code that reads config files, you need to:
 1. Obviously, make sure that the paths and the options defined in the configuration files are the options that you would like to run
 
 2. You need to do the following:
-
+```
 cd src/
-
 
 python class_train.py configs/config_class_train.yaml  
 python adv_train.py configs/config_adv_train.yaml  
 python combined_train.py configs/config_combined_train.yaml  
 python make_scores.py configs/config_make_scores.yaml  
+```
