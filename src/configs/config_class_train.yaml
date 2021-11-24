@@ -1,0 +1,15 @@
+data:
+  path_to_trainfiles: "/sps/atlas/k/khandoga/MySamplesS40/*_train.root"  # /sps/atlas/k/khandoga/MySamplesS40/user.mykhando.27366163._000001.tree.root_train.root
+  path_to_save: "/sps/atlas/j/jzahredd/LJPTagger/latest/ljptagger/Models/"
+
+architecture:
+  batch_size: 2058
+  test_size: 0.2
+  n_epochs: 60
+  learning_rate: 0.0005
+  choose_model: LundNet ## LundNet, GATNet, GINNet, EdgeGinNet, PNANet
+  save_every_epoch: True
+
+retrain:
+  flag: False
+  path_to_ckpt: "/sps/atlas/k/khandoga/TrainGNN/Models/LundNet_ufob_e012_0.12481.pt"
