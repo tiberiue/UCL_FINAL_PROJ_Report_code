@@ -47,19 +47,110 @@ def to_categorical(y, num_classes=None, dtype='float32'):
     return categorical
 
 
-def create_train_dataset_fulld_new(z, k, d, edge1, edge2, label):
+def create_train_dataset_prmy(z, k, d, label):
     graphs = []
     for i in range(len(z)):
-        if (len(edge1[i])== 0) or (len(edge2[i])== 0):
-            continue
-        else:
-            edge = torch.tensor(np.array([edge1[i], edge2[i]]) , dtype=torch.long)
         vec = []
         vec.append(np.array([d[i], z[i], k[i]]).T)
         vec = np.array(vec)
         vec = np.squeeze(vec)
+        ya = kneighbors_graph(vec, n_neighbors=int(np.floor(vec.shape[0]/2)))
+        edges = np.array([ya.nonzero()[0], ya.nonzero()[1]])
+        edge = torch.tensor(edges, dtype=torch.long)
         graphs.append(Data(x=torch.tensor(vec, dtype=torch.float), edge_index=edge, y=torch.tensor(label[i], dtype=torch.float)))
     return graphs
+
+
+def create_train_dataset_fulld(z, k, d, p1, p2, label):
+    graphs = []
+    for i in range(len(z)):
+        #if i%1000 == 0: 
+            #print("Processing event {}/{}".format(i, len(z)), end="\r")
+        vec = []
+        vec.append(np.array([d[i], z[i], k[i]]).T)
+        vec = np.array(vec)
+        vec = np.squeeze(vec)
+
+        v1 = [[ind, x] for ind, x in enumerate(p1[i]) if x > -1]
+        v2 = [[ind, x] for ind, x in enumerate(p2[i]) if x > -1]
+
+        a1 = np.reshape(v1,(len(v1),2)).T
+        a2 = np.reshape(v2,(len(v2),2)).T
+        edge1 = np.concatenate((a1[0], a2[0], a1[1], a2[1]),axis = 0)
+        edge2 = np.concatenate((a1[1], a2[1], a1[0], a2[0]),axis = 0)
+        edge = torch.tensor(np.array([edge1, edge2]), dtype=torch.long)
+        graphs.append(Data(x=torch.tensor(vec, dtype=torch.float), edge_index=edge, y=torch.tensor(label[i], dtype=torch.float)))
+    return graphs
+
+
+def create_test_dataset_prmy(z, k, d):
+    graphs = []
+    for i in range(len(z)):
+        vec = []
+        vec.append(np.array([d[i], z[i], k[i]]).T)
+        vec = np.array(vec)
+        vec = np.squeeze(vec)
+        ya = kneighbors_graph(vec, n_neighbors=int(np.floor(vec.shape[0]/2)))
+        edges = np.array([ya.nonzero()[0], ya.nonzero()[1]])
+        edge = torch.tensor(edges, dtype=torch.long)
+        graphs.append(Data(x=torch.tensor(vec, dtype=torch.float), edge_index=edge))
+    return graphs
+
+def create_test_dataset_fulld(z, k, d, p1, p2):
+    graphs = []
+    for i in range(len(z)):
+        vec = []
+        vec.append(np.array([d[i], z[i], k[i]]).T)
+        vec = np.array(vec)
+        vec = np.squeeze(vec)
+        v1 = [[ind, x] for ind, x in enumerate(p1[i]) if x > -1]
+        v2 = [[ind, x] for ind, x in enumerate(p2[i]) if x > -1]
+
+        a1 = np.reshape(v1,(len(v1),2)).T
+        a2 = np.reshape(v2,(len(v2),2)).T
+        edge1 = np.concatenate((a1[0], a2[0], a1[1], a2[1]),axis = 0)
+        edge2 = np.concatenate((a1[1], a2[1], a1[0], a2[0]),axis = 0)
+        edge = torch.tensor(np.array([edge1, edge2]), dtype=torch.long)
+        graphs.append(Data(x=torch.tensor(vec, dtype=torch.float), edge_index=edge))
+    return graphs
+
+def create_train_dataset_fulld_new(z, k, d, edge1, edge2, label):
+    graphs = []
+    for i in range(len(z)):
+        vec = []
+        vec.append(np.array([d[i], z[i], k[i]]).T)
+        vec = np.array(vec)
+        vec = np.squeeze(vec)
+        edge = torch.tensor(np.array([edge1[i], edge2[i]]) , dtype=torch.long)
+
+        graphs.append(Data(x=torch.tensor(vec, dtype=torch.float), edge_index=edge, y=torch.tensor(label[i], dtype=torch.float)))
+    return graphs
+
+class Net(torch.nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.conv1 = EdgeConv(nn.Sequential(nn.Linear(6, 64),
+                                  nn.ReLU(), nn.Linear(64, 64), nn.ReLU(), nn.Linear(64, 64)),aggr='add')
+        self.conv2 = EdgeConv(nn.Sequential(nn.Linear(128, 128),
+                                  nn.ReLU(), nn.Linear(128, 128),nn.ReLU(), nn.Linear(128, 128)),aggr='add')
+        self.conv3 = EdgeConv(nn.Sequential(nn.Linear(256,256,),
+                                  nn.ReLU(), nn.Linear(256, 256),nn.ReLU(), nn.Linear(256, 256)),aggr='add')
+        self.lin1 = torch.nn.Linear(256, 128)
+        self.lin2 = torch.nn.Linear(256, 64)
+        self.lin3 = torch.nn.Linear(64, 2)
+        
+    def forward(self, data):
+        x, edge_index, batch = data.x, data.edge_index, data.batch
+        x = self.conv1(x, edge_index)
+        x = self.conv2(x, edge_index)
+        x = self.conv3(x, edge_index)
+        x = global_mean_pool(x, batch)
+        x = F.dropout(x, p=0.1)
+        x = self.lin2(x)
+        x = F.dropout(x, p=0.1)
+        x = self.lin3(x)
+        #print(x.shape)
+        return F.sigmoid(x)
 
 class LundNet(torch.nn.Module):
     def __init__(self):
@@ -69,63 +160,69 @@ class LundNet(torch.nn.Module):
                                             nn.ReLU(),
                                             nn.Linear(32, 32),
                                             nn.BatchNorm1d(num_features=32),
-                                            nn.ReLU()),aggr='add')
+                                            nn.ReLU()),aggr='mean')
         self.conv2 = EdgeConv(nn.Sequential(nn.Linear(64, 32),
                                             nn.BatchNorm1d(num_features=32),
                                             nn.ReLU(),
                                             nn.Linear(32, 32),
                                             nn.BatchNorm1d(num_features=32),
-                                            nn.ReLU()),aggr='add')
+                                            nn.ReLU()),aggr='mean')
         self.conv3 = EdgeConv(nn.Sequential(nn.Linear(64,64),
                                             nn.BatchNorm1d(num_features=64),
                                             nn.ReLU(),
                                             nn.Linear(64, 64),
                                             nn.BatchNorm1d(num_features=64),
-                                            nn.ReLU()),aggr='add')
+                                            nn.ReLU()),aggr='mean')
         self.conv4 = EdgeConv(nn.Sequential(nn.Linear(128, 64),
                                             nn.BatchNorm1d(num_features=64),
                                             nn.ReLU(),
                                             nn.Linear(64, 64),
                                             nn.BatchNorm1d(num_features=64),
-                                            nn.ReLU()),aggr='add')
+                                            nn.ReLU()),aggr='mean')
         self.conv5 = EdgeConv(nn.Sequential(nn.Linear(128, 128),
                                             nn.BatchNorm1d(num_features=128),
                                             nn.ReLU(),
                                             nn.Linear(128, 128),
                                             nn.BatchNorm1d(num_features=128),
-                                            nn.ReLU()),aggr='add')
+                                            nn.ReLU()),aggr='mean')
         self.conv6 = EdgeConv(nn.Sequential(nn.Linear(256, 128),
                                             nn.BatchNorm1d(num_features=128),
                                             nn.ReLU(),
                                             nn.Linear(128, 128),
                                             nn.BatchNorm1d(num_features=128),
-                                            nn.ReLU()),aggr='add')
-
+                                            nn.ReLU()),aggr='mean')
+        self.sc1 = nn.Sequential(nn.Linear(3, 32, bias=False), nn.BatchNorm1d(num_features=32))
+        self.sc2 = nn.Sequential(nn.ReLU())
+        self.sc3 = nn.Sequential(nn.Linear(32, 64, bias=False), nn.BatchNorm1d(num_features=64))
+        self.sc5 = nn.Sequential(nn.Linear(64, 128, bias=False), nn.BatchNorm1d(num_features=128))
         self.seq1 = nn.Sequential(nn.Linear(448, 384),
                                 nn.BatchNorm1d(num_features=384),
                                 nn.ReLU())
         self.seq2 = nn.Sequential(nn.Linear(384, 256),
                                   nn.ReLU())
-        #self.lin1 = torch.nn.Linear(128, 128)
-        #self.lin2 = torch.nn.Linear(448, 64)
-        self.lin = nn.Linear(256, 1)
+        self.lin = nn.Linear(256, 2)
 
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
         x1 = self.conv1(x, edge_index)
+        x1 = self.sc2(self.sc1(x) + x1)
         x2 = self.conv2(x1, edge_index)
+        x2 = self.sc2(x2 + x1)
         x3 = self.conv3(x2, edge_index)
+        x3 = self.sc2(self.sc3(x2) + x3)
         x4 = self.conv4(x3, edge_index)
+        x4 = self.sc2(x4 + x3)
         x5 = self.conv5(x4, edge_index)
+        x5 = self.sc2(self.sc5(x4) + x5)
         x6 = self.conv6(x5, edge_index)
+        x6 = self.sc2(x6 + x5)
         x = torch.cat((x1, x2, x3, x4, x5, x6), dim=1)
         x = self.seq1(x)
         x = global_mean_pool(x, batch)
         x = self.seq2(x)
         x = F.dropout(x, p=0.1)
         x = self.lin(x)
-        #print(x.shape)
-        return F.sigmoid(x)
+        return F.softmax(x)
 
 class GATNet(torch.nn.Module):
     def __init__(self, in_channels):
@@ -143,7 +240,7 @@ class GATNet(torch.nn.Module):
                                   nn.ReLU())
         #self.lin1 = torch.nn.Linear(128, 128)
         #self.lin2 = torch.nn.Linear(448, 64)
-        self.lin = nn.Linear(256, 1)
+        self.lin = nn.Linear(256, 2)
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
         x1 = self.conv1(x, edge_index)
@@ -208,7 +305,7 @@ class GINNet(torch.nn.Module):
                                   nn.ReLU())
         #self.lin1 = torch.nn.Linear(128, 128)
         #self.lin2 = torch.nn.Linear(448, 64)
-        self.lin = nn.Linear(256, 1)
+        self.lin = nn.Linear(256, 2)
         
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
@@ -274,7 +371,7 @@ class EdgeGinNet(torch.nn.Module):
                                   nn.ReLU())
         #self.lin1 = torch.nn.Linear(128, 128)
         #self.lin2 = torch.nn.Linear(448, 64)
-        self.lin = nn.Linear(256, 1)
+        self.lin = nn.Linear(256, 2)
         
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
@@ -295,12 +392,12 @@ class EdgeGinNet(torch.nn.Module):
 
 
 
-class PNANet(torch.nn.Module):
+class PNASimpleNet(torch.nn.Module):
     def __init__(self,in_channels):
         aggregators = ['sum','mean', 'min', 'max', 'std']
         scalers = ['identity', 'amplification', 'attenuation',"linear",'inverse_linear']
         
-        super(PNANet, self).__init__()
+        super(PNASimpleNet, self).__init__()
         self.conv1 = PNAConv(in_channels, out_channels=32, deg=deg, post_layers=1,aggregators=aggregators, 
                                             scalers = scalers)
         self.conv2 = PNAConv(in_channels=32, out_channels=64, deg=deg, post_layers=1,aggregators=aggregators, 
@@ -318,7 +415,7 @@ class PNANet(torch.nn.Module):
                                 nn.ReLU())
         self.seq2 = nn.Sequential(nn.Linear(384, 256), 
                                   nn.ReLU())
-        self.lin = nn.Linear(256, 1)
+        self.lin = nn.Linear(256, 2)
         
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
@@ -337,9 +434,8 @@ class PNANet(torch.nn.Module):
         return F.sigmoid(x)
 
 
-files = glob.glob("/sps/atlas/k/khandoga/MySamplesS40/*_train.root")
-#files = glob.glob("/sps/atlas/k/khandoga/MySamplesS40/user.rvinasco.27045978._000004.tree.root_train.root")
-#files = files[:1]
+files = glob.glob("/sps/atlas/k/khandoga/MySamples/*.root")
+
 jet_type = "Akt10UFOJet" #UFO jets
 save_trained_model = True
 intreename = "FlatSubstructureJetTree"
@@ -372,37 +468,45 @@ for file in files:
 
     print("Loading file",file)
 
-    with uproot.open(file) as infile:
-        tree = infile[intreename]
-        dsids = np.append( dsids, np.array(tree["DSID"].array()) )
-        #eta = ak.concatenate(eta, pad_ak3(tree["Akt10TruthJet_jetEta"].array(), 30),axis=0)
-        mcweights = tree["mcWeight"].array()
-        NBHadrons = np.append( NBHadrons, ak.to_numpy(tree["Akt10UFOJet_GhostBHadronsFinalCount"].array()))
+    infile = uproot.open(file)
+    tree = infile[intreename]
+    dsids = np.append( dsids, np.array(tree["DSID"].array()) )
+    #eta = ak.concatenate(eta, pad_ak3(tree["Akt10TruthJet_jetEta"].array(), 30),axis=0)
+    mcweights = tree["mcWeight"].array()
+    NBHadrons = np.append( NBHadrons, ak.to_numpy(tree["Akt10TruthJet_ungroomedParent_GhostBHadronsFinalCount"].array()))
 
-        parent1 = np.append(parent1, tree["UFO_edge1"].array(library="np"),axis=0)
-        parent2 = np.append(parent2, tree["UFO_edge2"].array(library="np"),axis=0)
-        jet_ms = np.append(jet_ms, ak.to_numpy(tree["UFOSD_jetM"].array()))
+    parent1 = np.append(parent1, tree["UFO_edge1"].array(library="np"),axis=0)
+    parent2 = np.append(parent2, tree["UFO_edge2"].array(library="np"),axis=0)
 
-        #Get jet kinematics
+    #Get jet kinematics
+    jet_pts = np.append(jet_pts, tree["UFO_jetPt"].array(library="np"))
+    jet_truth_pts = np.append(jet_truth_pts, tree["Truth_jetPt"].array(library="np"))
+    jet_truth_etas = np.append(jet_truth_etas, ak.to_numpy(tree["Truth_jetEta"].array(library="np")))
+
+    jet_truth_dRmatched = np.append(jet_truth_dRmatched, tree["Akt10TruthJet_dRmatched_particle_flavor"].array(library="np"))
     
-#        jet_truth_split = np.append(jet_truth_split, tree["Akt10TruthJet_ungroomed_truthJet_Split12"].array(library="np"))
-      
-        #Get Lund variables
-        all_lund_zs = np.append(all_lund_zs,tree["UFO_jetLundz"].array(library="np") ) 
-        all_lund_kts = np.append(all_lund_kts, tree["UFO_jetLundKt"].array(library="np") ) 
-        all_lund_drs = np.append(all_lund_drs, tree["UFO_jetLundDeltaR"].array(library="np") )
+    jet_truth_split = np.append(jet_truth_split, tree["Akt10UFOJet_Split12"].array(library="np"))
+    jet_ms = np.append(jet_ms, ak.to_numpy(tree["UFO_jetM"].array()))
+    jet_ungroomed_ms = np.append(jet_ungroomed_ms, tree["Akt10TruthJet_ungroomed_truthJet_m"].array(library="np"))
+    jet_ungroomed_pts = np.append(jet_ungroomed_pts, tree["Akt10TruthJet_ungroomed_truthJet_pt"].array(library="np"))
+
+    #Get Lund variables
+    all_lund_zs = np.append(all_lund_zs,tree["UFO_jetLundz"].array(library="np") ) 
+    all_lund_kts = np.append(all_lund_kts, tree["UFO_jetLundKt"].array(library="np") ) 
+    all_lund_drs = np.append(all_lund_drs, tree["UFO_jetLundDeltaR"].array(library="np") )
 
 
 
 #Get labels
-labels = ( dsids > 370000 ) & ( NBHadrons == 0 ) 
+#labels = ( dsids > 360000 ) & ( dsids < 370000 )
+
+labels = (dsids > 370000) & (jet_truth_pts > 200) & (abs(jet_truth_etas) < 2) & \
+(jet_ms > 40) & (jet_ms < 300)& (jet_pts > 200) & (jet_pts < 3000) & (jet_ungroomed_ms > 50000) & \
+(NBHadrons == 0) & (abs(jet_truth_dRmatched) == 24) & \
+(jet_truth_split/1000 > 55.25 + np.exp(-2.34/1000 * jet_ungroomed_pts))
 
 #print(labels)
 labels = to_categorical(labels, 2)
-labels = np.reshape(labels[:,1], (len(all_lund_zs), 1))
-
-print (int(labels.sum()),"labeled as signal out of", len(labels), "total events")
-
 
 delta_t_fileax = time.time() - t_start
 print("Opened data in {:.4f} seconds.".format(delta_t_fileax))
@@ -411,20 +515,14 @@ print("Opened data in {:.4f} seconds.".format(delta_t_fileax))
 #W bosons
 # It will take about 30 minutes to finish
 dataset = create_train_dataset_fulld_new(all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, labels)
-#dataset = create_train_dataset_fulld_new(all_lund_zs[s_evt:events], all_lund_kts[s_evt:events], all_lund_drs[s_evt:events], parent1[s_evt:events], parent2[s_evt:events], labels[s_evt:events])
-
-
 print("Dataset created!")
 delta_t_fileax = time.time() - t_start
 print("Created dataset in {:.4f} seconds.".format(delta_t_fileax))
 
-batch_size = 2048
-
-dataset= shuffle(dataset,random_state=42)
+dataset= shuffle(dataset,random_state=0)
 train_ds, validation_ds = train_test_split(dataset, test_size = 0.2, random_state = 144)
-train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
-val_loader = DataLoader(validation_ds, batch_size=batch_size, shuffle=False)
-
+train_loader = DataLoader(train_ds, batch_size=1024, shuffle=True)
+val_loader = DataLoader(validation_ds, batch_size=1024, shuffle=False)
 delta_t_fileax = time.time() - t_start
 print("Splitted datasets in {:.4f} seconds.".format(delta_t_fileax))
 
@@ -439,47 +537,33 @@ for data in dataset:
 
 
 model = LundNet()
-
-path = "Models/LundNet_ufob_e012_0.12481.pt"
-
-model.load_state_dict(torch.load(path))
-
-
-device = torch.device('cuda') # Usually gpu 4 worked best, it had the most memory available
+device = torch.device('cpu') # Usually gpu 4 worked best, it had the most memory available
 model.to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0005)
 
-
 def train(loader):
-    print ("dataset size:",len(loader.dataset))
     model.train()
     loss_all = 0
-    batch_counter = 0
     for data in loader:
-        batch_counter+=1
-#        print ("processing batch number",batch_counter)
         data = data.to(device)
         optimizer.zero_grad()
         output = model(data)
-        new_y = torch.reshape(data.y, (int(list(data.y.shape)[0]),1))
+        new_y = torch.reshape(data.y, (int(list(data.y.shape)[0]/2),2))
         loss = F.binary_cross_entropy(output, new_y)
         loss.backward()
-#        print ("data.num_graphs",data.num_graphs)
-#        print ("loss.item()",loss.item())
         loss_all += data.num_graphs * loss.item()
         optimizer.step()
     return loss_all / len(loader.dataset)
 
 @torch.no_grad()
 def get_accuracy(loader):
-    #remember to change this when evaluating combined model
     model.eval()
     correct = 0
     for data in loader:
-        cl_data = data.to(device)
-        new_y = torch.reshape(cl_data.y, (int(list(cl_data.y.shape)[0]),1))
-        pred = model(cl_data).max(dim=1)[1]
-        correct += pred.eq(new_y[0,:]).sum().item()
+        data = data.to(device)
+        new_y = torch.reshape(data.y, (int(list(data.y.shape)[0]/2),2))
+        pred = model(data).max(dim=1)[1]
+        correct += pred.eq(new_y[:,1]).sum().item()
     return correct / len(loader.dataset)
 
 @torch.no_grad()
@@ -489,7 +573,7 @@ def my_test (loader):
     for data in loader:
         data = data.to(device)
         output = model(data)        
-        new_y = torch.reshape(data.y, (int(list(data.y.shape)[0]),1))
+        new_y = torch.reshape(data.y, (int(list(data.y.shape)[0]/2),2))
         loss = F.binary_cross_entropy(output, new_y)
         loss_all += data.num_graphs * loss.item()
     return loss_all/len(loader.dataset)
@@ -499,78 +583,19 @@ def get_scores(loader):
     model.eval()
     total_output = np.array([[1,1]])
     for data in loader:
-        cl_data = data.to(device)
-        pred = model(cl_data)
+        data = data.to(device)
+        pred = model(data)
         total_output = np.append(total_output, pred.cpu().detach().numpy(), axis=0)
     return total_output[1:]
     
-
-def aux_metrics(loader):
-    model.eval()
-    counter = 0
-    bkg_tagged = 0
-    bkg_total = 0
-    jsd_total = 0
-    nans = 0
-    jsd_counter = 0 
-    mass_tagged = np.array([])
-    mass_untagged = np.array([])
-    for data in loader:
-        cl_data = data[0].to(device)
-        adv_data = data[1].to(device)
-        new_y = torch.reshape(cl_data.y, (int(list(cl_data.y.shape)[0]),1))
-    #    print ("true labels",new_y) 
-        mask_bkg = new_y.lt(0.5)
-    #    print ("mask_bkg",mask_bkg) 
-        cl_out = model(cl_data)
-   #     print ("preds",cl_out)  
-        mask_tag = cl_out.lt(0.5)
-        mask_untag = cl_out.ge(0.5)
- #       print ("mask_tag",mask_tag)
- #       print ("mask_untag",mask_untag)
- #       print ("sum bg",torch.count_nonzero(mask_bkg))
- #       print ("sum tag bg",torch.count_nonzero(mask_tag))
-        bkg_tagged+=torch.count_nonzero(mask_untag&mask_bkg)
-        bkg_total+=torch.count_nonzero(mask_bkg)
-#        print ("adv_data.x",adv_data.y)
-#        print ("mass tag",adv_data.y[mask_bkg&mask_tag])
-#        print ("mass untag",adv_data.y[mask_bkg&mask_untag])
-        p, _ = np.histogram(np.array(adv_data.y[mask_bkg&mask_tag].cpu()), bins=MASSBINS, density=1.)
-        f, _ = np.histogram(np.array(adv_data.y[mask_bkg&mask_untag].cpu()), bins=MASSBINS, density=1.)
-        jsd = JSD(p,f)
-        if math.isnan(jsd):
-            nans+=1
-        else:
-            jsd_total +=jsd
-            jsd_counter+=1
-  #      print ("jsd",jsd)
-    if bkg_tagged:
-        eff = bkg_total/bkg_tagged
-    else:
-        eff = bkg_total*0
-
-    if jsd_counter:
-        jsd_total = jsd_total/jsd_counter
-    else:
-        jsd_total = 0
-
-    return float(eff.cpu()), jsd_total
-
-train_jds = []
-val_jds = []
-
-train_bgrej = []
-val_bgrej = []
-
-model_name = "LundNet_longrun_"
+model_name = "LundNet_NewData_"
 path = "/sps/atlas/k/khandoga/TrainGNN/Models/"
 train_loss = []
 val_loss = []
 train_acc = []
 val_acc = []
-n_epochs = 60
+n_epochs = 50
 save_every_epoch = True
-metrics_filename = path+"losses_"+model_name+datetime.now().strftime("%d%m-%H%M")+".txt"
 
 for epoch in range(n_epochs):
     print("Epoch:{}".format(epoch+1))
@@ -579,26 +604,12 @@ for epoch in range(n_epochs):
 #    delta_t_fileax = time.time() - t_start
 #    print("trained epoch in {:.4f} seconds.".format(delta_t_fileax))
     val_loss.append(my_test(val_loader))
-
-    #epsilon_bg, jds = aux_metrics(train_loader)
-    epsilon_bg, jds = 0,0
-    train_jds.append(jds)
-    print ("Train epsilon bg:",epsilon_bg)
-    print ("Train JDV:",jds)
-    train_bgrej.append(epsilon_bg)
-
-    #epsilon_bg_test, jds_test = aux_metrics(val_loader)
-    epsilon_bg_test, jds_test = 0,0
-    val_jds.append(jds_test)
-    val_bgrej.append(epsilon_bg_test)
-    print ("Test epsilon bg:",epsilon_bg_test)
-    print ("Test JDV:",jds_test)
-
-    print('Epoch: {:03d}, Train Loss: {:.5f}, Val Loss: {:.5f},train_jds: {:.5f},val_jds: {:.5f}'.format(epoch, train_loss[epoch], val_loss[epoch], train_jds[epoch], val_jds[epoch]))
-    metrics = pd.DataFrame({"Train_Loss":train_loss,"Val_Loss":val_loss, "Train_jds":train_jds,"Val_jds":val_jds,"Train_bgrej":train_bgrej,"Val_bgrej":val_bgrej})
-
-    metrics.to_csv(metrics_filename, index = False)
-
+#    print ("Val Loss:",val_loss[-1])
+#    delta_t_fileax = time.time() - t_start
+#    print("tested val loss in {:.4f} seconds.".format(delta_t_fileax))
+    train_acc.append(get_accuracy(train_loader))
+    val_acc.append(get_accuracy(val_loader))
+    print('Epoch: {:03d}, Train Loss: {:.5f}, Val Loss: {:.5f}, Train Acc: {:.5f}, Val Acc: {:.5f}'.format(epoch+1, train_loss[epoch], val_loss[epoch], train_acc[epoch], val_acc[epoch]))
 #    print('Epoch: {:03d}, Train Loss: {:.5f}, Val Loss: {:.5f}'.format(epoch+1, train_loss[epoch], val_loss[epoch]))
     if (save_every_epoch):
         torch.save(model.state_dict(), path+model_name+"e{:03d}".format(epoch+1)+"_{:.5f}".format(val_loss[epoch])+".pt")
@@ -606,3 +617,5 @@ for epoch in range(n_epochs):
         torch.save(model.state_dict(), path+model_name+"e{:03d}".format(epoch+1)+"_{:.5f}".format(val_loss[epoch])+".pt")
 
 
+metrics = pd.DataFrame({"Train_Loss":train_loss,"Val_Loss":val_loss,"Train_Acc":train_acc,"Val_Acc":val_acc})
+metrics.to_csv(path+"losses_"+model_name+datetime.now().strftime("%d%m-%H%M")+".txt", index = False)

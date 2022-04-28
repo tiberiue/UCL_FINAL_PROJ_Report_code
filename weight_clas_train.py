@@ -31,6 +31,28 @@ import pandas as pd
 
 print("Libraries loaded!")
 
+weights_file = uproot.open("flat_weights_tr.root")
+flatweights_bg = weights_file["bg_inv"].to_numpy()
+flatweights_sig = weights_file["h_sig_inv"].to_numpy()
+
+def GetPtWeight( dsid, pt):
+    scale_factor = 1
+    if dsid > 370000:
+        arr = flatweights_sig
+    else:
+        arr = flatweights_bg
+        scale_factor = 14.475606 #balancing out the weight integral
+    n = -1
+    for el in arr[1]:
+        if pt > el:
+            n+=1
+            continue
+        else:
+            break
+    if pt>arr[1][-1]:
+        return 0
+    return arr[0][n]*scale_factor*10**4
+
 def to_categorical(y, num_classes=None, dtype='float32'):
     y = np.array(y, dtype='int')
     input_shape = y.shape
@@ -46,8 +68,7 @@ def to_categorical(y, num_classes=None, dtype='float32'):
     categorical = np.reshape(categorical, output_shape)
     return categorical
 
-
-def create_train_dataset_fulld_new(z, k, d, edge1, edge2, label):
+def create_train_dataset_fulld_new(z, k, d, edge1, edge2, weight, label):
     graphs = []
     for i in range(len(z)):
         if (len(edge1[i])== 0) or (len(edge2[i])== 0):
@@ -58,7 +79,7 @@ def create_train_dataset_fulld_new(z, k, d, edge1, edge2, label):
         vec.append(np.array([d[i], z[i], k[i]]).T)
         vec = np.array(vec)
         vec = np.squeeze(vec)
-        graphs.append(Data(x=torch.tensor(vec, dtype=torch.float), edge_index=edge, y=torch.tensor(label[i], dtype=torch.float)))
+        graphs.append(Data(x=torch.tensor(vec, dtype=torch.float), edge_index=edge, weights =torch.tensor(weight[i], dtype=torch.float) , y=torch.tensor(label[i], dtype=torch.float)))
     return graphs
 
 class LundNet(torch.nn.Module):
@@ -382,6 +403,7 @@ for file in files:
         parent1 = np.append(parent1, tree["UFO_edge1"].array(library="np"),axis=0)
         parent2 = np.append(parent2, tree["UFO_edge2"].array(library="np"),axis=0)
         jet_ms = np.append(jet_ms, ak.to_numpy(tree["UFOSD_jetM"].array()))
+        jet_pts = np.append(jet_pts, ak.to_numpy(tree["UFOSD_jetPt"].array()))
 
         #Get jet kinematics
     
@@ -391,11 +413,12 @@ for file in files:
         all_lund_zs = np.append(all_lund_zs,tree["UFO_jetLundz"].array(library="np") ) 
         all_lund_kts = np.append(all_lund_kts, tree["UFO_jetLundKt"].array(library="np") ) 
         all_lund_drs = np.append(all_lund_drs, tree["UFO_jetLundDeltaR"].array(library="np") )
-
-
+        
 
 #Get labels
 labels = ( dsids > 370000 ) & ( NBHadrons == 0 ) 
+
+flat_weights = np.vectorize(GetPtWeight)(dsids, jet_pts)
 
 #print(labels)
 labels = to_categorical(labels, 2)
@@ -410,7 +433,7 @@ print("Opened data in {:.4f} seconds.".format(delta_t_fileax))
 
 #W bosons
 # It will take about 30 minutes to finish
-dataset = create_train_dataset_fulld_new(all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, labels)
+dataset = create_train_dataset_fulld_new(all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels)
 #dataset = create_train_dataset_fulld_new(all_lund_zs[s_evt:events], all_lund_kts[s_evt:events], all_lund_drs[s_evt:events], parent1[s_evt:events], parent2[s_evt:events], labels[s_evt:events])
 
 
@@ -440,9 +463,9 @@ for data in dataset:
 
 model = LundNet()
 
-path = "Models/LundNet_ufob_e012_0.12481.pt"
+path = "Models/LundNet_weighted_e018_0.42957.pt"
 
-model.load_state_dict(torch.load(path))
+#model.load_state_dict(torch.load(path))
 
 
 device = torch.device('cuda') # Usually gpu 4 worked best, it had the most memory available
@@ -462,7 +485,9 @@ def train(loader):
         optimizer.zero_grad()
         output = model(data)
         new_y = torch.reshape(data.y, (int(list(data.y.shape)[0]),1))
-        loss = F.binary_cross_entropy(output, new_y)
+        new_w = torch.reshape(data.weights, (int(list(data.weights.shape)[0]),1))
+        #print (new_w)
+        loss = F.binary_cross_entropy(output, new_y, weight = new_w)
         loss.backward()
 #        print ("data.num_graphs",data.num_graphs)
 #        print ("loss.item()",loss.item())
@@ -488,7 +513,7 @@ def my_test (loader):
     loss_all = 0
     for data in loader:
         data = data.to(device)
-        output = model(data)        
+        output = model(data)    
         new_y = torch.reshape(data.y, (int(list(data.y.shape)[0]),1))
         loss = F.binary_cross_entropy(output, new_y)
         loss_all += data.num_graphs * loss.item()
@@ -562,7 +587,7 @@ val_jds = []
 train_bgrej = []
 val_bgrej = []
 
-model_name = "LundNet_longrun_"
+model_name = "LundNet_wei_scaled_"
 path = "/sps/atlas/k/khandoga/TrainGNN/Models/"
 train_loss = []
 val_loss = []

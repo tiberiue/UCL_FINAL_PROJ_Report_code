@@ -301,17 +301,17 @@ class PNANet(torch.nn.Module):
         scalers = ['identity', 'amplification', 'attenuation',"linear",'inverse_linear']
         
         super(PNANet, self).__init__()
-        self.conv1 = PNAConv(in_channels, out_channels=32, deg=deg, post_layers=1,aggregators=aggregators, 
+        self.conv1 = PNAConv(in_channels, out_channels=32, deg=deg, post_layers=2,aggregators=aggregators, 
                                             scalers = scalers)
-        self.conv2 = PNAConv(in_channels=32, out_channels=64, deg=deg, post_layers=1,aggregators=aggregators, 
+        self.conv2 = PNAConv(in_channels=32, out_channels=64, deg=deg, post_layers=2,aggregators=aggregators, 
                                             scalers = scalers)
-        self.conv3 = PNAConv(in_channels=64, out_channels=128, deg=deg, post_layers=1,aggregators=aggregators, 
+        self.conv3 = PNAConv(in_channels=64, out_channels=128, deg=deg, post_layers=2,aggregators=aggregators, 
                                             scalers = scalers)
-        self.conv4 = PNAConv(in_channels=128, out_channels=256, deg=deg, post_layers=1,aggregators=aggregators, 
+        self.conv4 = PNAConv(in_channels=128, out_channels=256, deg=deg, post_layers=2,aggregators=aggregators, 
                                             scalers = scalers)
-        self.conv5 = PNAConv(in_channels=256, out_channels=256, deg=deg, post_layers=1,aggregators=aggregators, 
+        self.conv5 = PNAConv(in_channels=256, out_channels=256, deg=deg, post_layers=2,aggregators=aggregators, 
                                             scalers = scalers)
-        self.conv6 = PNAConv(in_channels=256, out_channels=256, deg=deg, post_layers=1,aggregators=aggregators, 
+        self.conv6 = PNAConv(in_channels=256, out_channels=256, deg=deg, post_layers=2,aggregators=aggregators, 
                                             scalers = scalers)
         self.seq1 = nn.Sequential(nn.Linear(992, 384), 
                                 nn.BatchNorm1d(num_features=384),
@@ -414,6 +414,7 @@ dataset = create_train_dataset_fulld_new(all_lund_zs, all_lund_kts, all_lund_drs
 #dataset = create_train_dataset_fulld_new(all_lund_zs[s_evt:events], all_lund_kts[s_evt:events], all_lund_drs[s_evt:events], parent1[s_evt:events], parent2[s_evt:events], labels[s_evt:events])
 
 
+
 print("Dataset created!")
 delta_t_fileax = time.time() - t_start
 print("Created dataset in {:.4f} seconds.".format(delta_t_fileax))
@@ -438,9 +439,9 @@ for data in dataset:
     deg += torch.bincount(d, minlength=deg.numel())
 
 
-model = LundNet()
+model = PNANet(3)
 
-path = "Models/LundNet_ufob_e012_0.12481.pt"
+path = "Models/PNANet_e001_0.17349.pt"
 
 model.load_state_dict(torch.load(path))
 
@@ -562,7 +563,7 @@ val_jds = []
 train_bgrej = []
 val_bgrej = []
 
-model_name = "LundNet_longrun_"
+model_name = "PNANet_"
 path = "/sps/atlas/k/khandoga/TrainGNN/Models/"
 train_loss = []
 val_loss = []

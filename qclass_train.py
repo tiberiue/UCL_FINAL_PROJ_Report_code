@@ -337,9 +337,9 @@ class PNANet(torch.nn.Module):
         return F.sigmoid(x)
 
 
-files = glob.glob("/sps/atlas/k/khandoga/MySamplesS40/*_train.root")
-#files = glob.glob("/sps/atlas/k/khandoga/MySamplesS40/user.rvinasco.27045978._000004.tree.root_train.root")
-#files = files[:1]
+files = glob.glob("/sps/atlas/k/khandoga/MySamplesS50/*_train.root")
+#files = glob.glob("/sps/atlas/k/khandoga/MySamples90/user.mykhando.26845601._000005.tree.root_train.root")
+#files = files[22:23]
 jet_type = "Akt10UFOJet" #UFO jets
 save_trained_model = True
 intreename = "FlatSubstructureJetTree"
@@ -377,25 +377,37 @@ for file in files:
         dsids = np.append( dsids, np.array(tree["DSID"].array()) )
         #eta = ak.concatenate(eta, pad_ak3(tree["Akt10TruthJet_jetEta"].array(), 30),axis=0)
         mcweights = tree["mcWeight"].array()
-        NBHadrons = np.append( NBHadrons, ak.to_numpy(tree["Akt10UFOJet_GhostBHadronsFinalCount"].array()))
+        NBHadrons = np.append( NBHadrons, ak.to_numpy(tree["Akt10TruthJet_ungroomedParent_GhostBHadronsFinalCount"].array()))
 
         parent1 = np.append(parent1, tree["UFO_edge1"].array(library="np"),axis=0)
         parent2 = np.append(parent2, tree["UFO_edge2"].array(library="np"),axis=0)
-        jet_ms = np.append(jet_ms, ak.to_numpy(tree["UFOSD_jetM"].array()))
 
         #Get jet kinematics
+        jet_pts = np.append(jet_pts, tree["AntiKt10UFOCSSKSoftDropBeta100Zcut10JetsCalib_jetPt"].array(library="np"))
+        jet_truth_pts = np.append(jet_truth_pts, tree["Truth_jetPt"].array(library="np"))
+        jet_truth_etas = np.append(jet_truth_etas, ak.to_numpy(tree["Truth_jetEta"].array(library="np")))
+
+        jet_truth_dRmatched = np.append(jet_truth_dRmatched, tree["Akt10TruthJet_dRmatched_particle_flavor"].array(library="np"))
     
-#        jet_truth_split = np.append(jet_truth_split, tree["Akt10TruthJet_ungroomed_truthJet_Split12"].array(library="np"))
-      
+        jet_truth_split = np.append(jet_truth_split, tree["AntiKt10UFOCSSKSoftDropBeta100Zcut10JetsCalib_Split12"].array(library="np"))
+        jet_ms = np.append(jet_ms, ak.to_numpy(tree["AntiKt10UFOCSSKSoftDropBeta100Zcut10JetsCalib_jetM"].array()))
+        jet_ungroomed_ms = np.append(jet_ungroomed_ms, tree["Akt10TruthJet_ungroomed_truthJet_m"].array(library="np"))
+        jet_ungroomed_pts = np.append(jet_ungroomed_pts, tree["Akt10TruthJet_ungroomed_truthJet_pt"].array(library="np"))
+
         #Get Lund variables
-        all_lund_zs = np.append(all_lund_zs,tree["UFO_jetLundz"].array(library="np") ) 
-        all_lund_kts = np.append(all_lund_kts, tree["UFO_jetLundKt"].array(library="np") ) 
-        all_lund_drs = np.append(all_lund_drs, tree["UFO_jetLundDeltaR"].array(library="np") )
+        all_lund_zs = np.append(all_lund_zs,tree["AntiKt10UFOCSSKSoftDropBeta100Zcut10JetsCalib_jetLundz"].array(library="np") ) 
+        all_lund_kts = np.append(all_lund_kts, tree["AntiKt10UFOCSSKSoftDropBeta100Zcut10JetsCalib_jetLundKt"].array(library="np") ) 
+        all_lund_drs = np.append(all_lund_drs, tree["AntiKt10UFOCSSKSoftDropBeta100Zcut10JetsCalib_jetLundDeltaR"].array(library="np") )
 
 
 
 #Get labels
 labels = ( dsids > 370000 ) & ( NBHadrons == 0 ) 
+
+#labels = (dsids > 370000) & (jet_truth_pts > 200) & (abs(jet_truth_etas) < 2) & \
+#(jet_ms > 40) & (jet_ms < 300)& (jet_pts > 200) & (jet_pts < 3000) & (jet_ungroomed_ms > 50000) & \
+#(NBHadrons == 0) & (abs(jet_truth_dRmatched) == 24) & \
+#(jet_truth_split/1000 > 55.25 * np.exp(-2.34/1000 * jet_ungroomed_pts/1000))
 
 #print(labels)
 labels = to_categorical(labels, 2)
@@ -412,7 +424,6 @@ print("Opened data in {:.4f} seconds.".format(delta_t_fileax))
 # It will take about 30 minutes to finish
 dataset = create_train_dataset_fulld_new(all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, labels)
 #dataset = create_train_dataset_fulld_new(all_lund_zs[s_evt:events], all_lund_kts[s_evt:events], all_lund_drs[s_evt:events], parent1[s_evt:events], parent2[s_evt:events], labels[s_evt:events])
-
 
 print("Dataset created!")
 delta_t_fileax = time.time() - t_start
@@ -439,12 +450,6 @@ for data in dataset:
 
 
 model = LundNet()
-
-path = "Models/LundNet_ufob_e012_0.12481.pt"
-
-model.load_state_dict(torch.load(path))
-
-
 device = torch.device('cuda') # Usually gpu 4 worked best, it had the most memory available
 model.to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0005)
@@ -504,72 +509,14 @@ def get_scores(loader):
         total_output = np.append(total_output, pred.cpu().detach().numpy(), axis=0)
     return total_output[1:]
     
-
-def aux_metrics(loader):
-    model.eval()
-    counter = 0
-    bkg_tagged = 0
-    bkg_total = 0
-    jsd_total = 0
-    nans = 0
-    jsd_counter = 0 
-    mass_tagged = np.array([])
-    mass_untagged = np.array([])
-    for data in loader:
-        cl_data = data[0].to(device)
-        adv_data = data[1].to(device)
-        new_y = torch.reshape(cl_data.y, (int(list(cl_data.y.shape)[0]),1))
-    #    print ("true labels",new_y) 
-        mask_bkg = new_y.lt(0.5)
-    #    print ("mask_bkg",mask_bkg) 
-        cl_out = model(cl_data)
-   #     print ("preds",cl_out)  
-        mask_tag = cl_out.lt(0.5)
-        mask_untag = cl_out.ge(0.5)
- #       print ("mask_tag",mask_tag)
- #       print ("mask_untag",mask_untag)
- #       print ("sum bg",torch.count_nonzero(mask_bkg))
- #       print ("sum tag bg",torch.count_nonzero(mask_tag))
-        bkg_tagged+=torch.count_nonzero(mask_untag&mask_bkg)
-        bkg_total+=torch.count_nonzero(mask_bkg)
-#        print ("adv_data.x",adv_data.y)
-#        print ("mass tag",adv_data.y[mask_bkg&mask_tag])
-#        print ("mass untag",adv_data.y[mask_bkg&mask_untag])
-        p, _ = np.histogram(np.array(adv_data.y[mask_bkg&mask_tag].cpu()), bins=MASSBINS, density=1.)
-        f, _ = np.histogram(np.array(adv_data.y[mask_bkg&mask_untag].cpu()), bins=MASSBINS, density=1.)
-        jsd = JSD(p,f)
-        if math.isnan(jsd):
-            nans+=1
-        else:
-            jsd_total +=jsd
-            jsd_counter+=1
-  #      print ("jsd",jsd)
-    if bkg_tagged:
-        eff = bkg_total/bkg_tagged
-    else:
-        eff = bkg_total*0
-
-    if jsd_counter:
-        jsd_total = jsd_total/jsd_counter
-    else:
-        jsd_total = 0
-
-    return float(eff.cpu()), jsd_total
-
-train_jds = []
-val_jds = []
-
-train_bgrej = []
-val_bgrej = []
-
-model_name = "LundNet_longrun_"
+model_name = "LundNet_slabel_"
 path = "/sps/atlas/k/khandoga/TrainGNN/Models/"
 train_loss = []
 val_loss = []
 train_acc = []
 val_acc = []
-n_epochs = 60
-save_every_epoch = True
+n_epochs = 35
+save_every_epoch = False
 metrics_filename = path+"losses_"+model_name+datetime.now().strftime("%d%m-%H%M")+".txt"
 
 for epoch in range(n_epochs):
@@ -579,24 +526,13 @@ for epoch in range(n_epochs):
 #    delta_t_fileax = time.time() - t_start
 #    print("trained epoch in {:.4f} seconds.".format(delta_t_fileax))
     val_loss.append(my_test(val_loader))
-
-    #epsilon_bg, jds = aux_metrics(train_loader)
-    epsilon_bg, jds = 0,0
-    train_jds.append(jds)
-    print ("Train epsilon bg:",epsilon_bg)
-    print ("Train JDV:",jds)
-    train_bgrej.append(epsilon_bg)
-
-    #epsilon_bg_test, jds_test = aux_metrics(val_loader)
-    epsilon_bg_test, jds_test = 0,0
-    val_jds.append(jds_test)
-    val_bgrej.append(epsilon_bg_test)
-    print ("Test epsilon bg:",epsilon_bg_test)
-    print ("Test JDV:",jds_test)
-
-    print('Epoch: {:03d}, Train Loss: {:.5f}, Val Loss: {:.5f},train_jds: {:.5f},val_jds: {:.5f}'.format(epoch, train_loss[epoch], val_loss[epoch], train_jds[epoch], val_jds[epoch]))
-    metrics = pd.DataFrame({"Train_Loss":train_loss,"Val_Loss":val_loss, "Train_jds":train_jds,"Val_jds":val_jds,"Train_bgrej":train_bgrej,"Val_bgrej":val_bgrej})
-
+#    print ("Val Loss:",val_loss[-1])
+#    delta_t_fileax = time.time() - t_start
+#    print("tested val loss in {:.4f} seconds.".format(delta_t_fileax))
+    train_acc.append(get_accuracy(train_loader))
+    val_acc.append(get_accuracy(val_loader))
+    print('Epoch: {:03d}, Train Loss: {:.5f}, Val Loss: {:.5f}, Train Acc: {:.5f}, Val Acc: {:.5f}'.format(epoch+1, train_loss[epoch], val_loss[epoch], train_acc[epoch], val_acc[epoch]))
+    metrics = pd.DataFrame({"Train_Loss":train_loss,"Val_Loss":val_loss,"Train_Acc":train_acc,"Val_Acc":val_acc})
     metrics.to_csv(metrics_filename, index = False)
 
 #    print('Epoch: {:03d}, Train Loss: {:.5f}, Val Loss: {:.5f}'.format(epoch+1, train_loss[epoch], val_loss[epoch]))

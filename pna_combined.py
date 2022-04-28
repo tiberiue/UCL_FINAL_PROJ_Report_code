@@ -33,7 +33,7 @@ import pandas as pd
 
 
 lr_ratio = 0.005
-grad_parameter = 0.3
+grad_parameter = 1
 loss_parameter = 0.04
 
 class GradientReversalFunction(Function):
@@ -331,31 +331,31 @@ class LundNet(torch.nn.Module):
 
 
 
-class PNASimpleNet(torch.nn.Module):
+class PNANet(torch.nn.Module):
     def __init__(self,in_channels):
         aggregators = ['sum','mean', 'min', 'max', 'std']
         scalers = ['identity', 'amplification', 'attenuation',"linear",'inverse_linear']
-
-        super(PNASimpleNet, self).__init__()
-        self.conv1 = PNAConv(in_channels, out_channels=32, deg=deg, post_layers=1,aggregators=aggregators,
+        
+        super(PNANet, self).__init__()
+        self.conv1 = PNAConv(in_channels, out_channels=32, deg=deg, post_layers=2,aggregators=aggregators, 
                                             scalers = scalers)
-        self.conv2 = PNAConv(in_channels=32, out_channels=64, deg=deg, post_layers=1,aggregators=aggregators,
+        self.conv2 = PNAConv(in_channels=32, out_channels=64, deg=deg, post_layers=2,aggregators=aggregators, 
                                             scalers = scalers)
-        self.conv3 = PNAConv(in_channels=64, out_channels=128, deg=deg, post_layers=1,aggregators=aggregators,
+        self.conv3 = PNAConv(in_channels=64, out_channels=128, deg=deg, post_layers=2,aggregators=aggregators, 
                                             scalers = scalers)
-        self.conv4 = PNAConv(in_channels=128, out_channels=256, deg=deg, post_layers=1,aggregators=aggregators,
+        self.conv4 = PNAConv(in_channels=128, out_channels=256, deg=deg, post_layers=2,aggregators=aggregators, 
                                             scalers = scalers)
-        self.conv5 = PNAConv(in_channels=256, out_channels=256, deg=deg, post_layers=1,aggregators=aggregators,
+        self.conv5 = PNAConv(in_channels=256, out_channels=256, deg=deg, post_layers=2,aggregators=aggregators, 
                                             scalers = scalers)
-        self.conv6 = PNAConv(in_channels=256, out_channels=256, deg=deg, post_layers=1,aggregators=aggregators,
+        self.conv6 = PNAConv(in_channels=256, out_channels=256, deg=deg, post_layers=2,aggregators=aggregators, 
                                             scalers = scalers)
-        self.seq1 = nn.Sequential(nn.Linear(992, 384),
+        self.seq1 = nn.Sequential(nn.Linear(992, 384), 
                                 nn.BatchNorm1d(num_features=384),
                                 nn.ReLU())
-        self.seq2 = nn.Sequential(nn.Linear(384, 256),
+        self.seq2 = nn.Sequential(nn.Linear(384, 256), 
                                   nn.ReLU())
         self.lin = nn.Linear(256, 1)
-
+        
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
         x1 = self.conv1(x, edge_index)
@@ -365,14 +365,14 @@ class PNASimpleNet(torch.nn.Module):
         x5 = self.conv5(x4, edge_index)
         x6 = self.conv6(x5, edge_index)
         x = torch.cat((x1, x2,x3,x4,x5,x6), dim=1)
-        x = self.seq1(x)
+        x = self.seq1(x) 
         x = global_mean_pool(x, batch)
         x = self.seq2(x)
         x = F.dropout(x, p=0.1)
         x = self.lin(x)
         return F.sigmoid(x)
 
-#path = "Models/LundNet_oldlabels_e019_0.12584.pt"
+path = "Models/PNANet_e031_0.16730.pt"
 
 
 ONEOVERSQRT2PI = 1.0 / math.sqrt(2 * math.pi)
@@ -515,7 +515,7 @@ class ConcatDataset(Dataset):
     def __len__(self):
         return len(self.datasetA)
 
-batch_size = 2048
+batch_size = 1024
 
 
 test_ds, test1_ds = train_test_split(dataset, test_size = 0.2, random_state = 144)
@@ -538,17 +538,17 @@ print ("validation dataset size:", len(validation_ds))
 print ("Loading classifier model.")
 
 #path = "Models/LundNet_ufob_jsd_e036_0.16891.pt"
-path = "Models/classao_grad0.3_lossp0.04_lrr0.005_s50e029_-1.60186_comb_.pt"
+path = "Models/PNANet_e031_0.16730.pt"
 
-clsf = LundNet()
-clsf.load_state_dict(torch.load(path))
+clsf = PNANet(3)
+#clsf.load_state_dict(torch.load(path))
 
 print ("Classifier model loaded, loading adversary.")
 
 adv = Adversary()
 
-adv_model_weights = "/sps/atlas/k/khandoga/TrainGNN/Models/advold_class_grad1_lossp0.04_lrr0.005e012_46.05093_comb_.pt"
-#adv_model_weights = "/sps/atlas/k/khandoga/TrainGNN/Models/adv_e020_5.31163.pt"
+#adv_model_weights = "/sps/atlas/k/khandoga/TrainGNN/Models/advold_class_grad1_lossp0.04_lrr0.005e012_46.05093_comb_.pt"
+adv_model_weights = "/sps/atlas/k/khandoga/TrainGNN/Models/adv_e020_5.31163.pt"
 
 adv.load_state_dict(torch.load(adv_model_weights))
 
@@ -805,7 +805,7 @@ train_jsdbg = []
 val_jsdbg = []
 
 path = "/sps/atlas/k/khandoga/TrainGNN/" ## path to store models txt files
-model_name = f"classao_grad{grad_parameter}_lossp{loss_parameter}_lrr{lr_ratio}_s50"
+model_name = f"classPNA_grad{grad_parameter}_p{loss_parameter}_lrr{lr_ratio}_s50"
 metrics_filename = path+"Models/"+"lossesao_"+model_name+datetime.now().strftime("%d%m-%H%M")+".txt"
 
 save_adv_every_epoch = True

@@ -17,7 +17,7 @@ import torch_geometric.transforms as T
 from torch_geometric.nn import SplineConv, global_mean_pool, DataParallel, EdgeConv,PNAConv
 from torch_geometric.data import Data
 from torch_geometric.utils import degree
-from torchsummary import summary
+#from torchsummary import summary
 from sklearn.neighbors import kneighbors_graph
 import scipy.sparse as ss
 from datetime import datetime, timedelta
@@ -35,6 +35,28 @@ import pandas as pd
 lr_ratio = 0.005
 grad_parameter = 0.3
 loss_parameter = 0.04
+
+weights_file = uproot.open("flat_weights_tr.root")
+flatweights_bg = weights_file["bg_inv"].to_numpy()
+flatweights_sig = weights_file["h_sig_inv"].to_numpy()
+
+def GetPtWeight( dsid, pt):
+    scale_factor = 1
+    if dsid > 370000:
+        arr = flatweights_sig
+    else:
+        arr = flatweights_bg
+        scale_factor = 10.475606 #balancing out the weight integral
+    n = -1
+    for el in arr[1]:
+        if pt > el:
+            n+=1
+            continue
+        else:
+            break
+    if pt>arr[1][-1]:
+        return 0
+    return arr[0][n]*scale_factor*1000
 
 class GradientReversalFunction(Function):
     """
@@ -101,7 +123,7 @@ def create_train_dataset_fulld(z, k, d, p1, p2, label):
     #graphs.append(Data(x=torch.tensor(vec, dtype=torch.float), edge_index=edge, y=torch.tensor(label[i], dtype=torch.float)))
     return graphs
 
-def create_train_dataset_fulld_new(z, k, d, edge1, edge2, label):
+def create_train_dataset_fulld_new(z, k, d, edge1, edge2, weight, label):
     graphs = []
     for i in range(len(z)):
         if (len(edge1[i])== 0) or (len(edge2[i])== 0):
@@ -112,7 +134,7 @@ def create_train_dataset_fulld_new(z, k, d, edge1, edge2, label):
         vec.append(np.array([d[i], z[i], k[i]]).T)
         vec = np.array(vec)
         vec = np.squeeze(vec)
-        graphs.append(Data(x=torch.tensor(vec, dtype=torch.float), edge_index=edge, y=torch.tensor(label[i], dtype=torch.float)))
+        graphs.append(Data(x=torch.tensor(vec, dtype=torch.float), edge_index=edge, weights =torch.tensor(weight[i], dtype=torch.float) , y=torch.tensor(label[i], dtype=torch.float)))
     return graphs
 
 def create_train_dataset_fulld(z, k, d, p1, p2, label):
@@ -220,10 +242,11 @@ labels = ( dsids > 370000 ) & ( NBHadrons == 0 ) # do NBHadrons == 0 for W boson
 #print(labels)
 labels = to_categorical(labels, 2)
 labels = np.reshape(labels[:,1], (len(all_lund_zs), 1))
+flat_weights = np.vectorize(GetPtWeight)(dsids, jet_pts)
 
 t_start = time.time()
 #W bosons
-dataset = create_train_dataset_fulld_new(all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, labels)
+dataset = create_train_dataset_fulld_new(all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels)
 #train_loader = DataLoader(dataset, batch_size=1024, shuffle=True)
 delta_t_fileax = time.time() - t_start
 print("Created dataset in {:.4f} seconds.".format(delta_t_fileax))
@@ -450,14 +473,14 @@ def gaussian_probability(sigma, mu, target):
     return torch.prod(ret, 2)
 
 
-def mdn_loss(pi, sigma, mu, target):
+def mdn_loss(pi, sigma, mu, target, weight):
     """Calculates the error, given the MoG parameters and the target
     The loss is the negative log likelihood of the data given the MoG
     parameters.
     """
     prob = pi * gaussian_probability(sigma, mu, target)
 #    nll = -torch.log(torch.sum(prob, dim=1))
-    nll = -torch.log(torch.sum(prob, dim=1))
+    nll = -weight*torch.log(torch.sum(prob, dim=1))
     return torch.mean(nll)
 
 
@@ -538,7 +561,8 @@ print ("validation dataset size:", len(validation_ds))
 print ("Loading classifier model.")
 
 #path = "Models/LundNet_ufob_jsd_e036_0.16891.pt"
-path = "Models/classao_grad0.3_lossp0.04_lrr0.005_s50e029_-1.60186_comb_.pt"
+#path = "Models/classao_grad0.3_lossp0.04_lrr0.005_s50e029_-1.60186_comb_.pt"
+path = "Models/LundNet_wei_scaled_e053_0.22891.pt"
 
 clsf = LundNet()
 clsf.load_state_dict(torch.load(path))
@@ -547,10 +571,10 @@ print ("Classifier model loaded, loading adversary.")
 
 adv = Adversary()
 
-adv_model_weights = "/sps/atlas/k/khandoga/TrainGNN/Models/advold_class_grad1_lossp0.04_lrr0.005e012_46.05093_comb_.pt"
+#adv_model_weights = "/sps/atlas/k/khandoga/TrainGNN/Models/advold_class_grad1_lossp0.04_lrr0.005e012_46.05093_comb_.pt"
 #adv_model_weights = "/sps/atlas/k/khandoga/TrainGNN/Models/adv_e020_5.31163.pt"
 
-adv.load_state_dict(torch.load(adv_model_weights))
+#adv.load_state_dict(torch.load(adv_model_weights))
 
 print ("Adversary loaded.")
 
@@ -599,22 +623,23 @@ def train_adversary(loader):
  #   print (" dataset length:", len(loader.dataset))
     for data in loader:
         batch_counter+=1
-  #      print ("processing batch number",batch_counter)
+        print ("processing batch number",batch_counter)
         cl_data = data[0].to(device)
         adv_data = data[1].to(device)
         new_y = torch.reshape(cl_data.y, (int(list(cl_data.y.shape)[0]),1))
+        new_w = torch.reshape(cl_data.weights, (int(list(cl_data.weights.shape)[0]),1))
 
         mask_bkg = new_y.lt(0.5)
         optimizer.zero_grad()
         cl_out = clsf(cl_data)
-        loss1 = F.binary_cross_entropy(cl_out, new_y)
+        loss1 = F.binary_cross_entropy(cl_out, new_y, weight = new_w)
         #print(torch.reshape(cl_out, (len(cl_out), 1)), torch.reshape(cl_out, (len(cl_out), 1)).shape)
         #print(adv_data.x, adv_data.x.shape)
         adv_inp = torch.cat((torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]), 1)), torch.reshape(adv_data.x[mask_bkg], (len(adv_data.x[mask_bkg]), 1))), 1)
         #print(adv_inp.shape)
         pi, sigma, mu = adv(adv_inp)
         #cl_out = clsf(cl_data)
-        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(cl_out[mask_bkg]), 1)))
+        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w)
         loss2.backward()
         loss = loss1 -loss2
   #      print ("loss1",loss1.item())
@@ -641,6 +666,8 @@ def train_combined(loader):
         cl_data = data[0].to(device)
         adv_data = data[1].to(device)
         new_y = torch.reshape(cl_data.y, (int(list(cl_data.y.shape)[0]),1))
+        new_w = torch.reshape(cl_data.weights, (int(list(cl_data.weights.shape)[0]),1))
+
         mask_bkg = new_y.lt(0.5)
         optimizer_cl.zero_grad()
         optimizer_adv.zero_grad()
@@ -652,8 +679,9 @@ def train_combined(loader):
         adv_inp = torch.cat((torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]), 1)), torch.reshape(adv_data.x[mask_bkg], (len(adv_data.x[mask_bkg]), 1))), 1)
         pi, sigma, mu = adv(adv_inp)
 
-        loss1 = F.binary_cross_entropy(cl_out, new_y)
-        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)))
+
+        loss1 = F.binary_cross_entropy(cl_out, new_y, weight = new_w)
+        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w)
         loss = loss1 - loss_parameter*loss2
 #        loss = loss1 
         loss.backward()
@@ -685,14 +713,15 @@ def test_combined(loader):
         new_y = torch.reshape(cl_data.y, (int(list(cl_data.y.shape)[0]),1))
         mask_bkg = new_y.lt(0.5)
         cl_out = clsf(cl_data)
+        new_w = torch.reshape(cl_data.weights, (int(list(cl_data.weights.shape)[0]),1))
 
         cl_out = cl_out.clamp(0, 1)
         cl_out[cl_out!=cl_out] = 0
 
         adv_inp = torch.cat((torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]), 1)), torch.reshape(adv_data.x[mask_bkg], (len(adv_data.x[mask_bkg]), 1))), 1)
         pi, sigma, mu = adv(adv_inp)
-        loss1 = F.binary_cross_entropy(cl_out, new_y)
-        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)))
+        loss1 = F.binary_cross_entropy(cl_out, new_y, weight = new_w)
+        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w)
         loss = loss1 - loss_parameter*loss2
 #       loss = loss1 
         loss_clsf += cl_data.num_graphs * loss1.item()

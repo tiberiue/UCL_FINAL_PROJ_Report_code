@@ -31,11 +31,6 @@ from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 import pandas as pd
 
-
-lr_ratio = 0.005
-grad_parameter = 0.3
-loss_parameter = 0.04
-
 class GradientReversalFunction(Function):
     """
     Gradient Reversal Layer from:
@@ -142,11 +137,9 @@ def create_train_dataset_fulld(z, k, d, p1, p2, label):
 #files = glob.glob("../OldSamples/*train*.root")
 
 
-files = glob.glob("/sps/atlas/k/khandoga/MySamplesS50/*_train.root")
-#files = files[:1]
-
+#files = glob.glob("/sps/atlas/k/khandoga/MySamples90/*_train.root")
 #files = files[:10]
-#files = glob.glob("/sps/atlas/k/khandoga/MySamples90/user.mykhando.26845601._000005.tree.root_train.root")
+files = glob.glob("/sps/atlas/k/khandoga/MySamples90/user.mykhando.26845601._000005.tree.root_train.root")
 
     #files = glob.glob("/eos/user/r/riordan/data/wprime/*_train.root") + glob.glob("/eos/user/r/riordan/data/j3to9/*_train.root")
 #    files = glob.glob("/sps/atlas/j/jzahredd/LJPTagger/GNN/data/wprime/*._000001.ANALYSIS.root_train.root") + glob.glob("/sps/atlas/j/jzahredd/LJPTagger/GNN/data/j3to9/*24603626*._000004.ANALYSIS.root_test.root")
@@ -171,10 +164,6 @@ parent2 = np.array([])
 
 jet_pts = np.array([])
 jet_ms = np.array([])
-jet_etas = np.array([])
-jet_phis = np.array([])
-
-
 eta = np.array([])
 jet_truth_pts = np.array([])
 jet_truth_etas = np.array([])
@@ -183,40 +172,49 @@ jet_truth_split = np.array([])
 jet_ungroomed_ms = np.array([])
 jet_ungroomed_pts = np.array([])
 vector = []
-mcweights = np.array([])
 intreename = "FlatSubstructureJetTree"
 for file in files:
 
     print("Loading file",file)
-    with uproot.open(file) as infile:
 
+    with uproot.open(file) as infile:
         tree = infile[intreename]
         dsids = np.append( dsids, np.array(tree["DSID"].array()) )
         #eta = ak.concatenate(eta, pad_ak3(tree["Akt10TruthJet_jetEta"].array(), 30),axis=0)
-        mcweights = np.append( mcweights, np.array(tree["mcWeight"].array()) )  
-        NBHadrons = np.append( NBHadrons, ak.to_numpy(tree["Akt10UFOJet_GhostBHadronsFinalCount"].array()))
+        mcweights = tree["mcWeight"].array()
+        NBHadrons = np.append( NBHadrons, ak.to_numpy(tree["Akt10TruthJet_ungroomedParent_GhostBHadronsFinalCount"].array()))
 
         parent1 = np.append(parent1, tree["UFO_edge1"].array(library="np"),axis=0)
         parent2 = np.append(parent2, tree["UFO_edge2"].array(library="np"),axis=0)
 
         #Get jet kinematics
-        jet_pts = np.append(jet_pts, tree["UFOSD_jetPt"].array(library="np"))
-        jet_etas = np.append(jet_etas, tree["UFOSD_jetEta"].array(library="np"))
-        jet_phis = np.append(jet_phis, tree["UFOSD_jetPhi"].array(library="np"))
+        jet_pts = np.append(jet_pts, tree["UFO_jetPt"].array(library="np"))
+        jet_truth_pts = np.append(jet_truth_pts, tree["Truth_jetPt"].array(library="np"))
+        jet_truth_etas = np.append(jet_truth_etas, ak.to_numpy(tree["Truth_jetEta"].array(library="np")))
 
-#        jet_truth_pts = np.append(jet_truth_pts, tree["Truth_jetPt"].array(library="np"))
-#        jet_truth_etas = np.append(jet_truth_etas, ak.to_numpy(tree["Truth_jetEta"].array(library="np")))
-
-        jet_ms = np.append(jet_ms, ak.to_numpy(tree["UFOSD_jetM"].array()))
+        jet_truth_dRmatched = np.append(jet_truth_dRmatched, tree["Akt10TruthJet_dRmatched_particle_flavor"].array(library="np"))
+    
+        jet_truth_split = np.append(jet_truth_split, tree["Akt10UFOJet_Split12"].array(library="np"))
+        jet_ms = np.append(jet_ms, ak.to_numpy(tree["UFO_jetM"].array()))
+        jet_ungroomed_ms = np.append(jet_ungroomed_ms, tree["Akt10TruthJet_ungroomed_truthJet_m"].array(library="np"))
+        jet_ungroomed_pts = np.append(jet_ungroomed_pts, tree["Akt10TruthJet_ungroomed_truthJet_pt"].array(library="np"))
 
         #Get Lund variables
         all_lund_zs = np.append(all_lund_zs,tree["UFO_jetLundz"].array(library="np") ) 
         all_lund_kts = np.append(all_lund_kts, tree["UFO_jetLundKt"].array(library="np") ) 
         all_lund_drs = np.append(all_lund_drs, tree["UFO_jetLundDeltaR"].array(library="np") )
 
-#Get labels
+
+delta_t_fileax = time.time() - t_start
+print("Opened data in {:.4f} seconds.".format(delta_t_fileax))
+
+#labels = (dsids > 370000) & (jet_truth_pts > 200) & (abs(jet_truth_etas) < 2) & \
+#(jet_ms > 40) & (jet_ms < 300)& (jet_pts > 200) & (jet_pts < 3000) & (jet_ungroomed_ms > 50000) & \
+#(NBHadrons == 0) & (abs(jet_truth_dRmatched) == 24) & \
+#(jet_truth_split/1000 > 55.25 * np.exp(-2.34/1000 * jet_ungroomed_pts/1000))
 
 labels = ( dsids > 370000 ) & ( NBHadrons == 0 ) # do NBHadrons == 0 for W bosons, NBHadrons > 0 for Tops
+
 #print(labels)
 labels = to_categorical(labels, 2)
 labels = np.reshape(labels[:,1], (len(all_lund_zs), 1))
@@ -373,7 +371,10 @@ class PNASimpleNet(torch.nn.Module):
         return F.sigmoid(x)
 
 #path = "Models/LundNet_oldlabels_e019_0.12584.pt"
+path = "Models/LundNet_srun_e014_0.36781.pt"
 
+clsf = LundNet()
+clsf.load_state_dict(torch.load(path))
 
 ONEOVERSQRT2PI = 1.0 / math.sqrt(2 * math.pi)
 
@@ -402,32 +403,20 @@ class MDN(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
         self.num_gaussians = num_gaussians
-        #self.bn1 = nn.BatchNorm1d(num_features=in_features)
         self.pi = nn.Sequential(
             nn.Linear(in_features, num_gaussians),
             nn.Softmax(dim=1)
         )
-     #   self.sigma = nn.Sequential(
-     #       nn.Linear(in_features, out_features * num_gaussians),
-     #       nn.Softplus()
-     #   )
-
-      #  self.mu = nn.Sequential(
-      #      nn.Linear(in_features, out_features * num_gaussians),
-      #      nn.Sigmoid()
-      #  )
         self.sigma = nn.Linear(in_features, out_features * num_gaussians)
         self.mu = nn.Linear(in_features, out_features * num_gaussians)
 
     def forward(self, minibatch):
-        #minibatch = self.bn1(minibatch)
         pi = self.pi(minibatch)
         sigma = torch.exp(self.sigma(minibatch))
         sigma = sigma.view(-1, self.num_gaussians, self.out_features)
         mu = self.mu(minibatch)
         mu = mu.view(-1, self.num_gaussians, self.out_features)
         return pi, sigma, mu
-
 
 
 def gaussian_probability(sigma, mu, target):
@@ -456,7 +445,6 @@ def mdn_loss(pi, sigma, mu, target):
     parameters.
     """
     prob = pi * gaussian_probability(sigma, mu, target)
-#    nll = -torch.log(torch.sum(prob, dim=1))
     nll = -torch.log(torch.sum(prob, dim=1))
     return torch.mean(nll)
 
@@ -475,8 +463,6 @@ def sample(pi, sigma, mu):
     mean_samples = mu.detach().gather(1, pis).squeeze()
     return (gaussian_noise * variance_samples + mean_samples).transpose(0, 1)
 
-
-
 num_gaussians = 20 # number of Gaussians at the end
 # The architecture of the adversary could be changed
 class Adversary(nn.Module):
@@ -487,7 +473,7 @@ class Adversary(nn.Module):
     nn.ReLU(),
     MDN(64, 1, num_gaussians)
 )
-        self.revgrad = GradientReversal(grad_parameter)
+        self.revgrad = GradientReversal(3)
 
     def forward(self, x):
         x = self.revgrad(x) # important hyperparameter, the scale,
@@ -535,58 +521,16 @@ val_loader = DataLoader(validation_ds, batch_size=batch_size, shuffle=False)
 print ("train dataset size:", len(train_ds))
 print ("validation dataset size:", len(validation_ds))
 
-print ("Loading classifier model.")
-
-#path = "Models/LundNet_ufob_jsd_e036_0.16891.pt"
-path = "Models/classao_grad0.3_lossp0.04_lrr0.005_s50e029_-1.60186_comb_.pt"
-
-clsf = LundNet()
-clsf.load_state_dict(torch.load(path))
-
-print ("Classifier model loaded, loading adversary.")
 
 adv = Adversary()
-
-adv_model_weights = "/sps/atlas/k/khandoga/TrainGNN/Models/advold_class_grad1_lossp0.04_lrr0.005e012_46.05093_comb_.pt"
-#adv_model_weights = "/sps/atlas/k/khandoga/TrainGNN/Models/adv_e020_5.31163.pt"
-
-adv.load_state_dict(torch.load(adv_model_weights))
-
-print ("Adversary loaded.")
-
-lr_optimizer = 0.0005
+for param in clsf.parameters():
+    param.require_grads = False
 
 device = torch.device('cuda') # Usually gpu 4 worked best, it had the most memory available
 clsf.to(device)
 adv.to(device)
-optimizer_cl = torch.optim.Adam(clsf.parameters(), lr=lr_optimizer)
-optimizer_adv = torch.optim.Adam(adv.parameters(), lr=lr_optimizer*lr_ratio)
-
-
-for param in clsf.parameters():
-    param.require_grads = True
-
-
-from scipy.stats import entropy
-def JSD (P, Q, base=2):
-    """Compute Jensen-Shannon divergence (JSD) of two distribtions.
-    From: [https://stackoverflow.com/a/27432724]
-
-    Arguments:
-        P: First distribution of variable as a numpy array.
-        Q: Second distribution of variable as a numpy array.
-        base: Logarithmic base to use when computing KL-divergence.
-
-    Returns:
-        Jensen-Shannon divergence of `P` and `Q`.
-    """
-    p = P / np.sum(P)
-    q = Q / np.sum(Q)
-    m = 0.5 * (p + q)
-    return 0.5 * (entropy(p, m, base=base) + entropy(q, m, base=base))
-
-MASSBINS = np.linspace(40, 300, (300 - 40) // 5 + 1, endpoint=True)
-
+optimizer = torch.optim.Adam(adv.parameters(), lr=0.0005)
+#optimizer = torch.optim.Adam(list(clsf.parameters()) + list(adv.parameters()), lr=0.0005)
 
 def train_adversary(loader):
     clsf.eval()
@@ -616,7 +560,7 @@ def train_adversary(loader):
         #cl_out = clsf(cl_data)
         loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(cl_out[mask_bkg]), 1)))
         loss2.backward()
-        loss = loss1 -loss2
+        loss = loss1+loss2
   #      print ("loss1",loss1.item())
   #      print ("loss2",loss2.item())
   #      print ("loss",loss.item())
@@ -633,7 +577,6 @@ def train_combined(loader):
     loss_clsf = 0
     loss_all = 0
     batch_counter = 0 
-    jsd_total = 0
  #   print ("batches in the dataset:", len(loader))
     for data in loader:
         batch_counter+=1
@@ -645,31 +588,17 @@ def train_combined(loader):
         optimizer_cl.zero_grad()
         optimizer_adv.zero_grad()
         cl_out = clsf(cl_data)
-        
-        cl_out = cl_out.clamp(0, 1)
-        cl_out[cl_out!=cl_out] = 0
-
         adv_inp = torch.cat((torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]), 1)), torch.reshape(adv_data.x[mask_bkg], (len(adv_data.x[mask_bkg]), 1))), 1)
         pi, sigma, mu = adv(adv_inp)
-
         loss1 = F.binary_cross_entropy(cl_out, new_y)
         loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)))
-        loss = loss1 - loss_parameter*loss2
-#        loss = loss1 
+        loss = loss1 + loss2
         loss.backward()
         loss_clsf += cl_data.num_graphs * loss1.item()
         loss_adv += cl_data.num_graphs * loss2.item()
         loss_all += cl_data.num_graphs * loss.item()
         optimizer_cl.step()
         optimizer_adv.step()
-#        mask_tag = cl_out.lt(0.5)
-#        mask_untag = cl_out.ge(0.5)
-#        p, _ = np.histogram(np.array(adv_data.y[mask_bkg&mask_tag].cpu()), bins=MASSBINS, density=1.)
-#        f, _ = np.histogram(np.array(adv_data.y[mask_bkg&mask_untag].cpu()), bins=MASSBINS, density=1.)
-#        jsd = JSD(p,f)
-#        jsd_total +=jsd
-#        print ("jsd",jsd)
-
     return loss_adv / len(loader.dataset), loss_clsf / len(loader.dataset), loss_all / len(loader.dataset)
 
 
@@ -685,76 +614,16 @@ def test_combined(loader):
         new_y = torch.reshape(cl_data.y, (int(list(cl_data.y.shape)[0]),1))
         mask_bkg = new_y.lt(0.5)
         cl_out = clsf(cl_data)
-
-        cl_out = cl_out.clamp(0, 1)
-        cl_out[cl_out!=cl_out] = 0
-
         adv_inp = torch.cat((torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]), 1)), torch.reshape(adv_data.x[mask_bkg], (len(adv_data.x[mask_bkg]), 1))), 1)
         pi, sigma, mu = adv(adv_inp)
         loss1 = F.binary_cross_entropy(cl_out, new_y)
         loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)))
-        loss = loss1 - loss_parameter*loss2
-#       loss = loss1 
+        loss = loss1 + loss2
         loss_clsf += cl_data.num_graphs * loss1.item()
         loss_adv += cl_data.num_graphs * loss2.item()
         loss_all += cl_data.num_graphs * loss.item()
     return loss_adv / len(loader.dataset), loss_clsf / len(loader.dataset), loss_all / len(loader.dataset)
 
-
-import math
-
-
-def aux_metrics(loader):
-    clsf.eval()
-    adv.eval()
-    counter = 0
-    bkg_tagged = 0
-    bkg_total = 0
-    jsd_total = 0
-    nans = 0
-    jsd_counter = 0 
-    mass_tagged = np.array([])
-    mass_untagged = np.array([])
-    for data in loader:
-        cl_data = data[0].to(device)
-        adv_data = data[1].to(device)
-        new_y = torch.reshape(cl_data.y, (int(list(cl_data.y.shape)[0]),1))
-    #    print ("true labels",new_y) 
-        mask_bkg = new_y.lt(0.5)
-    #    print ("mask_bkg",mask_bkg) 
-        cl_out = clsf(cl_data)
-   #     print ("preds",cl_out)  
-        mask_tag = cl_out.lt(0.5)
-        mask_untag = cl_out.ge(0.5)
- #       print ("mask_tag",mask_tag)
- #       print ("mask_untag",mask_untag)
- #       print ("sum bg",torch.count_nonzero(mask_bkg))
- #       print ("sum tag bg",torch.count_nonzero(mask_tag))
-        bkg_tagged+=torch.count_nonzero(mask_untag&mask_bkg)
-        bkg_total+=torch.count_nonzero(mask_bkg)
-#        print ("adv_data.x",adv_data.y)
-#        print ("mass tag",adv_data.y[mask_bkg&mask_tag])
-#        print ("mass untag",adv_data.y[mask_bkg&mask_untag])
-        p, _ = np.histogram(np.array(adv_data.y[mask_bkg&mask_tag].cpu()), bins=MASSBINS, density=1.)
-        f, _ = np.histogram(np.array(adv_data.y[mask_bkg&mask_untag].cpu()), bins=MASSBINS, density=1.)
-        jsd = JSD(p,f)
-        if math.isnan(jsd):
-            nans+=1
-        else:
-            jsd_total +=jsd
-            jsd_counter+=1
-  #      print ("jsd",jsd)
-    if bkg_tagged:
-        eff = bkg_total/bkg_tagged
-    else:
-        eff = bkg_total*0
-
-    if jsd_counter:
-        jsd_total = jsd_total/jsd_counter
-    else:
-        jsd_total = 0
-
-    return float(eff.cpu()), jsd_total
 
 @torch.no_grad()
 def get_accuracy(loader):
@@ -780,9 +649,7 @@ def get_scores(loader):
     return total_output[1:]
 
 
-
-
-print("Started training together!")
+print("Training adversary whilst keeping classifier the same.")
 
 train_loss_clsf = []
 train_loss_adv = []
@@ -794,28 +661,49 @@ val_loss_total = []
 
 train_acc = []
 val_acc = []
-
-train_jds = []
-val_jds = []
-
-train_bgrej = []
-val_bgrej = []
-
-train_jsdbg = []
-val_jsdbg = []
-
 path = "/sps/atlas/k/khandoga/TrainGNN/" ## path to store models txt files
-model_name = f"classao_grad{grad_parameter}_lossp{loss_parameter}_lrr{lr_ratio}_s50"
-metrics_filename = path+"Models/"+"lossesao_"+model_name+datetime.now().strftime("%d%m-%H%M")+".txt"
+model_name = "lund_adv_25_lambda3_loc_"
+metrics_filename = path+"Models/"+"losses_"+model_name+datetime.now().strftime("%d%m-%H%M")+".txt"
 
-save_adv_every_epoch = True
-adv_model_name = f"advold_class_grad{grad_parameter}_lossp{loss_parameter}_lrr{lr_ratio}"
 
-n_epochs_common = 150
+n_epochs_adv = 3
+
+for epoch in range(n_epochs_adv): # this may need to be bigger
+ #   my_test(test_loader)
+
+    ad_lt, clsf_lt, total_lt =  train_adversary(adv_loader)
+    train_loss_adv.append(ad_lt)
+    train_loss_clsf.append(clsf_lt)
+    train_loss_total.append(total_lt)
+    train_acc.append(get_accuracy(adv_loader))
+
+    ad_lv, clsf_lv, total_lv =  test_combined(val_loader)
+    val_loss_adv.append(ad_lv)
+    val_loss_clsf.append(clsf_lv)
+    val_loss_total.append(total_lv)
+    val_acc.append(get_accuracy(val_loader))
+
+    print('Epoch: {:03d}, Train Loss total: {:.5f}, Train Loss adv: {:.5f}, Train Loss clsf: {:.5f}, val_loss_adv: {:.5f}, val_loss_clsf: {:.5f}, val_loss_total: {:.5f},train_acc: {:.5f},val_acc: {:.5f}'.format(epoch, train_loss_total[epoch],train_loss_adv[epoch],train_loss_clsf[epoch], val_loss_adv[epoch], val_loss_clsf[epoch], val_loss_total[epoch],train_acc[epoch],val_acc[epoch]))
+    metrics = pd.DataFrame({"Train_Loss_adv":train_loss_adv,"Train_Loss_clsf":train_loss_clsf,"Train_Loss_total":train_loss_total,"Val_Loss_Adv":val_loss_adv,"Val_loss_Class":val_loss_clsf,"val_loss_total":val_loss_total, "Train_Acc":train_acc,"Val_Acc":val_acc})
+    metrics.to_csv(metrics_filename, index = False)
+
+for param in clsf.parameters():
+    param.require_grads = True
+
+device = torch.device('cuda') # Usually gpu 4 worked best, it had the most memory available
+clsf.to(device)
+adv.to(device)
+optimizer_cl = torch.optim.Adam(clsf.parameters(), lr=0.01)
+optimizer_adv = torch.optim.Adam(adv.parameters(), lr=0.00001)
+#optimizer = torch.optim.Adam(list(clsf.parameters()) + list(adv.parameters()), lr=0.0005)
+
+
+
+print("Started training together!")
+
+
+n_epochs_common = 40
 save_every_epoch = True
-
-#for param in adv.parameters():
-#    param.require_grads = True
 
 for epoch in range(n_epochs_common): # this may need to be bigger
     print("Epoch:{}".format(epoch))
@@ -824,45 +712,19 @@ for epoch in range(n_epochs_common): # this may need to be bigger
     train_loss_clsf.append(clsf_lt)
     train_loss_adv.append(ad_lt)
     train_loss_total.append(total_lt)
-    epsilon_bg, jds = aux_metrics(adv_loader)
-    #epsilon_bg, jds = 0,0
-    train_jds.append(jds)
-    print ("Train epsilon bg:",epsilon_bg)
-    print ("Train JDV:",jds)
-    train_bgrej.append(epsilon_bg)
-    if jds:
-        train_jsdbg.append(epsilon_bg + 1/jds)
-    else:
-        train_jsdbg.append(0)
+    train_acc.append(get_accuracy(adv_loader))
 
     ad_lv, clsf_lv, total_lv =  test_combined(val_loader)
     val_loss_adv.append(ad_lv)
     val_loss_clsf.append(clsf_lv)
     val_loss_total.append(total_lv)
-    
-    epsilon_bg_test, jds_test = aux_metrics(val_loader)
-    #epsilon_bg_test, jds_test = 0,0
-    val_jds.append(jds_test)
-    val_bgrej.append(epsilon_bg_test)
-    if jds_test:
-        val_jsdbg.append(epsilon_bg_test + 1/jds_test)
-    else:
-        val_jsdbg.append(0)
+    val_acc.append(get_accuracy(val_loader))
 
-    print ("Test epsilon bg:",epsilon_bg_test)
-    print ("Test JDV:",jds_test)
-
-    print('Epoch: {:03d}, Train Loss total: {:.5f}, Train Loss adv: {:.5f}, Train Loss clsf: {:.5f}, val_loss_adv: {:.5f}, val_loss_clsf: {:.5f}, val_loss_total: {:.5f},train_jds: {:.5f},val_jds: {:.5f},train_jdsbg: {:.5f},val_jdsbg: {:.5f}'.format(epoch, 
-        train_loss_total[epoch],train_loss_adv[epoch],train_loss_clsf[epoch], val_loss_adv[epoch], val_loss_clsf[epoch], val_loss_total[epoch], train_jds[epoch], val_jds[epoch],train_jsdbg[epoch],val_jsdbg[epoch]))
-    metrics = pd.DataFrame({"Train_Loss_adv":train_loss_adv,"Train_Loss_clsf":train_loss_clsf,"Train_Loss_total":train_loss_total,"Val_Loss_Adv":val_loss_adv,"Val_loss_Class":val_loss_clsf,
-        "val_loss_total":val_loss_total, "Train_jds":train_jds,"Val_jds":val_jds,"Train_bgrej":train_bgrej,"Val_bgrej":val_bgrej, "Train_jsdbg":train_jsdbg,"Val_jsdbg":val_jsdbg})
+    print('Epoch: {:03d}, Train Loss total: {:.5f}, Train Loss adv: {:.5f}, Train Loss clsf: {:.5f}, val_loss_adv: {:.5f}, val_loss_clsf: {:.5f}, val_loss_total: {:.5f},train_acc: {:.5f},val_acc: {:.5f}'.format(epoch, train_loss_total[n_epochs_adv+epoch],train_loss_adv[n_epochs_adv+epoch],train_loss_clsf[n_epochs_adv+epoch], val_loss_adv[n_epochs_adv+epoch], val_loss_clsf[n_epochs_adv+epoch], val_loss_total[n_epochs_adv+epoch], train_acc[n_epochs_adv+epoch], val_acc[n_epochs_adv+epoch]))
+    metrics = pd.DataFrame({"Train_Loss_adv":train_loss_adv,"Train_Loss_clsf":train_loss_clsf,"Train_Loss_total":train_loss_total,"Val_Loss_Adv":val_loss_adv,"Val_loss_Class":val_loss_clsf,"val_loss_total":val_loss_total, "Train_Acc":train_acc,"Val_Acc":val_acc})
     metrics.to_csv(metrics_filename, index = False)
-    if (save_every_epoch):
-        torch.save(clsf.state_dict(), path+"Models/"+model_name+"e{:03d}".format(epoch+1)+"_{:.5f}".format(val_loss_total[epoch])+"_comb_"+".pt")
-        torch.save(adv.state_dict(), path+"Models/"+adv_model_name+"e{:03d}".format(epoch+1)+"_{:.5f}".format(val_loss_adv[epoch])+"_comb_"+".pt")
-
-  #  elif epoch == n_epochs-1:
-  #      torch.save(clsf.state_dict(), path+"Models/"+model_name+"_ct_"+"e{:03d}".format(epoch+1)+"_{:.5f}".format(val_loss_total[epoch])+".pt")
-  #      torch.save(adv.state_dict(), path+"Models/"+adv_model_name+"_ct_"+"e{:03d}".format(epoch+1)+"_{:.5f}".format(val_loss_adv[epoch])+".pt")
-
+#    if (save_every_epoch):
+#        torch.save(clsf.state_dict(), path+"Models/"+model_name+"e{:03d}".format(epoch+1)+"_{:.5f}".format(val_loss_total[epoch])+".pt")
+#    elif epoch == n_epochs-1:
+#        torch.save(clsf.state_dict(), path+"Models/"+model_name+"e{:03d}".format(epoch+1)+"_{:.5f}".format(val_loss_total[epoch])+".pt")
 
