@@ -1,0 +1,306 @@
+import awkward
+import os.path as osp
+import os
+import glob
+import torch
+import awkward as ak
+import time
+import uproot
+import uproot3
+import numpy as np
+from datetime import datetime, timedelta
+import os.path
+
+print("Libraries loaded!")
+
+#parser = argparse.ArgumentParser(description='Index helper')
+#parser.add_argument('index', type=int, help='Beginning of slice')
+#args = parser.parse_args()
+
+#infiles_list = glob.glob("/eos/user/r/riordan/data/wprime/*_test.root") + glob.glob("/eos/user/r/riordan/data/j3to9/*_test.root")
+#infiles_list = infiles_list[args.index:args.index+1]
+#print(infiles_list)
+
+#files = glob.glob("/eos/user/m/mykhando/public/FlatSamples/Train_Test_split_cclyon/user.mykhando.27245469._000004.tree.root_test.root")
+
+files = glob.glob("/sps/atlas/k/khandoga/MySamplesS40/*train*.root")
+#files = files[:2]
+print ("files:",files)
+intreename = "FlatSubstructureJetTree"
+
+outdir = "/sps/atlas/k/khandoga/Scores/"
+
+#path = "/sps/atlas/k/khandoga/TrainGNN/Models/LundNet_ufob_e010_0.12276.pt"
+#path = "/sps/atlas/k/khandoga/TrainGNN/Models/class_neg_lambda10_jsd_loce037_-1.96575_comb_.pt"
+#path = "/sps/atlas/k/khandoga/TrainGNN/Models/class_neg_grad05_jsd_longe112_-2.01732_comb_.pt"
+path = "/sps/atlas/k/khandoga/TrainGNN/Models/classao_grad1_lossp0.04_lrr0.005_s50e005_-1.53161_comb_.pt"
+
+#model_name = "LundTest_big"
+model_name = "3var_train_dataset"    
+
+    #input TTree name
+
+
+
+
+nentries_total = 0
+nentries_done = 0
+
+for file in files:
+#    if (os.path.isfile(outdir+"{}_score_{}.root".format(outfile_path, model_name))):
+#        print ("Skipping file", outdir+"{}_score_{}.root".format(outfile_path, model_name))
+#        continue 
+
+    nentries_total += uproot3.numentries(file, intreename)
+
+print("Evaluating on {} files with {} entries in total.".format(len(files), nentries_total))
+
+
+class LundNet(torch.nn.Module):
+    def __init__(self):
+        super(LundNet, self).__init__()
+        self.conv1 = EdgeConv(nn.Sequential(nn.Linear(6, 32),
+                                            nn.BatchNorm1d(num_features=32),
+                                            nn.ReLU(),
+                                            nn.Linear(32, 32),
+                                            nn.BatchNorm1d(num_features=32),
+                                            nn.ReLU()),aggr='add')
+        self.conv2 = EdgeConv(nn.Sequential(nn.Linear(64, 32),
+                                            nn.BatchNorm1d(num_features=32),
+                                            nn.ReLU(),
+                                            nn.Linear(32, 32),
+                                            nn.BatchNorm1d(num_features=32),
+                                            nn.ReLU()),aggr='add')
+        self.conv3 = EdgeConv(nn.Sequential(nn.Linear(64,64),
+                                            nn.BatchNorm1d(num_features=64),
+                                            nn.ReLU(),
+                                            nn.Linear(64, 64),
+                                            nn.BatchNorm1d(num_features=64),
+                                            nn.ReLU()),aggr='add')
+        self.conv4 = EdgeConv(nn.Sequential(nn.Linear(128, 64),
+                                            nn.BatchNorm1d(num_features=64),
+                                            nn.ReLU(),
+                                            nn.Linear(64, 64),
+                                            nn.BatchNorm1d(num_features=64),
+                                            nn.ReLU()),aggr='add')
+        self.conv5 = EdgeConv(nn.Sequential(nn.Linear(128, 128),
+                                            nn.BatchNorm1d(num_features=128),
+                                            nn.ReLU(),
+                                            nn.Linear(128, 128),
+                                            nn.BatchNorm1d(num_features=128),
+                                            nn.ReLU()),aggr='add')
+        self.conv6 = EdgeConv(nn.Sequential(nn.Linear(256, 128),
+                                            nn.BatchNorm1d(num_features=128),
+                                            nn.ReLU(),
+                                            nn.Linear(128, 128),
+                                            nn.BatchNorm1d(num_features=128),
+                                            nn.ReLU()),aggr='add')
+
+        self.seq1 = nn.Sequential(nn.Linear(448, 384),
+                                nn.BatchNorm1d(num_features=384),
+                                nn.ReLU())
+        self.seq2 = nn.Sequential(nn.Linear(384, 256),
+                                  nn.ReLU())
+        #self.lin1 = torch.nn.Linear(128, 128)
+        #self.lin2 = torch.nn.Linear(448, 64)
+        self.lin = nn.Linear(256, 1)
+
+    def forward(self, data):
+        x, edge_index, batch = data.x, data.edge_index, data.batch
+        x1 = self.conv1(x, edge_index)
+        x2 = self.conv2(x1, edge_index)
+        x3 = self.conv3(x2, edge_index)
+        x4 = self.conv4(x3, edge_index)
+        x5 = self.conv5(x4, edge_index)
+        x6 = self.conv6(x5, edge_index)
+        x = torch.cat((x1, x2, x3, x4, x5, x6), dim=1)
+        x = self.seq1(x)
+        x = global_mean_pool(x, batch)
+        x = self.seq2(x)
+        x = F.dropout(x, p=0.1)
+        x = self.lin(x)
+        #print(x.shape)
+        return F.sigmoid(x)
+
+
+   
+@torch.no_grad()
+def get_scores(loader):
+    model.eval()
+    total_output = np.array([[1]])
+    batch_counter = 0
+    for data in loader:
+        batch_counter+=1
+        print ("Processing batch", batch_counter, "of",len(loader))
+        data = data.to(device)
+        pred = model(data)
+        total_output = np.append(total_output, pred.cpu().detach().numpy(), axis=0)
+
+    return total_output[1:]
+
+
+def to_categorical(y, num_classes=None, dtype='float32'):
+    y = np.array(y, dtype='int')
+    input_shape = y.shape
+    if input_shape and input_shape[-1] == 1 and len(input_shape) > 1:
+        input_shape = tuple(input_shape[:-1])
+    y = y.ravel()
+    if not num_classes:
+        num_classes = np.max(y) + 1
+    n = y.shape[0]
+    categorical = np.zeros((n, num_classes), dtype=dtype)
+    categorical[np.arange(n), y] = 1
+    output_shape = input_shape + (num_classes,)
+    categorical = np.reshape(categorical, output_shape)
+    return categorical
+
+def create_train_dataset_fulld_new(z, k, d, edge1, edge2, label):
+    graphs = []
+    for i in range(len(z)):
+        if i%10000 ==0:
+            print ("Loading event:",i)
+        if (len(edge1[i])== 0) or (len(edge2[i])== 0):
+            edge = torch.tensor(np.array([edge1[i-1], edge2[i-1]]) , dtype=torch.long)
+        else:
+            edge = torch.tensor(np.array([edge1[i], edge2[i]]) , dtype=torch.long)
+        vec = []
+        vec.append(np.array([d[i], z[i], k[i]]).T)
+        vec = np.array(vec)
+        vec = np.squeeze(vec)
+        graphs.append(Data(x=torch.tensor(vec, dtype=torch.float), edge_index=edge, y=torch.tensor(label[i], dtype=torch.float)))
+    return graphs
+
+
+#Load tf keras model
+# jet_type = "Akt10RecoChargedJet" #track jets
+jet_type = "Akt10UFOJet" #UFO jets
+#print(files)
+save_trained_model = True
+
+t_filestart = time.time()
+
+for file in files:
+
+    t_start = time.time()
+
+    dsids = np.array([])
+    NBHadrons = np.array([])
+    mcweights = np.array([])
+    ptweights = np.array([])
+
+    all_lund_zs = np.array([])
+    all_lund_kts = np.array([])
+    all_lund_drs = np.array([])
+
+    parent1 = np.array([])
+    parent2 = np.array([])
+
+    jet_d2 = np.array([])
+    jet_ntrk = np.array([])
+
+    jet_pts = np.array([])
+    jet_phis = np.array([])
+    jet_etas = np.array([])
+    jet_ms = np.array([])
+    eta = np.array([])
+    jet_truth_pts = np.array([])
+    jet_truth_etas = np.array([])
+    jet_truth_dRmatched = np.array([])
+    jet_truth_split = np.array([])
+    jet_ungroomed_ms = np.array([])
+    jet_ungroomed_pts = np.array([])
+    vector = []
+
+    print("Loading file",file)
+
+    #with uproot.open(file) as infile:
+    with uproot.open(file) as infile:
+
+        tree = infile[intreename]
+        dsids = np.append( dsids, np.array(tree["DSID"].array()) )
+        #eta = ak.concatenate(eta, pad_ak3(tree["Akt10TruthJet_jetEta"].array(), 30),axis=0)
+        mcweights = np.append( mcweights, np.array(tree["mcWeight"].array()) )  
+        ptweights = np.append( ptweights, np.array(tree["fjet_testing_weight_pt"].array()) )  
+        NBHadrons = np.append( NBHadrons, ak.to_numpy(tree["Akt10UFOJet_GhostBHadronsFinalCount"].array()))
+
+
+        #Get jet kinematics
+        jet_pts = np.append(jet_pts, tree["UFOSD_jetPt"].array(library="np"))
+        jet_etas = np.append(jet_etas, tree["UFOSD_jetEta"].array(library="np"))
+        jet_phis = np.append(jet_phis, tree["UFOSD_jetPhi"].array(library="np"))
+        jet_ms = np.append(jet_ms, tree["UFOSD_jetM"].array(library="np"))
+
+        jet_d2 = np.append(jet_d2, tree["UFO_D2"].array(library="np"))
+        jet_ntrk = np.append(jet_ntrk, tree["UFO_Ntrk"].array(library="np"))
+
+#        jet_truth_pts = np.append(jet_truth_pts, tree["Truth_jetPt"].array(library="np"))
+#        jet_truth_etas = np.append(jet_truth_etas, ak.to_numpy(tree["Truth_jetEta"].array(library="np")))
+
+
+        #Get Lund variables
+
+
+    #Get labels
+   
+    print("Dataset created!")
+    delta_t_fileax = time.time() - t_start
+    print("Created dataset in {:.4f} seconds.".format(delta_t_fileax))
+
+    batch_size = 2048
+
+
+
+    print ("dataset dataset size:", len(jet_etas))
+
+
+    #EVALUATING
+    #torch.save(model.state_dict(), path)
+
+    #Save root files containing model scores
+    filename = file.split("/")[-1]
+    outfile_path = os.path.join(outdir, filename) 
+        
+    print ("dsids",len(dsids),"mcweights",len(mcweights),"NBHadrons",len(NBHadrons),"jet_pts",len(jet_pts),"jet_etas",len(jet_phis),"jet_phis",len(jet_phis),"jet_ms",len(jet_ms),"ptweights",len(ptweights))
+    with uproot3.recreate("{}_score_{}.root".format(outfile_path, model_name)) as f:
+
+        treename = "FlatSubstructureJetTree"
+
+        #Declare branch data types
+        f[treename] = uproot3.newtree({"EventInfo_mcChannelNumber": "int32",
+                                      "EventInfo_mcEventWeight": "float32",
+                                      "EventInfo_NBHadrons": "int32",   # I doubt saving the parents is necessary here
+                                      "fjet_d2": "float32",        # which is why I didn't include them
+                                      "fjet_ntrk": "float32",        
+                                      "fjet_pt": "float32",
+                                      "fjet_eta": "float32",
+                                      "fjet_phi": "float32",
+                                      "fjet_m": "float32",
+                                      "fjet_weight_pt": "float32"
+                                      })
+
+        #Save branches
+        f[treename].extend({"EventInfo_mcChannelNumber": dsids,
+                            "EventInfo_mcEventWeight": mcweights,
+                            "EventInfo_NBHadrons": NBHadrons,
+                            "fjet_d2": jet_d2, 
+                            "fjet_ntrk": jet_ntrk, 
+                            "fjet_pt": jet_pts,
+                            "fjet_eta": jet_etas,
+                            "fjet_phi": jet_phis,
+                            "fjet_m": jet_ms,
+                            "fjet_weight_pt": ptweights,
+                            })
+
+
+    #nentries = 0
+    #Time statistics
+    nentries_done += uproot3.numentries(file, intreename)
+    time_per_entry = (time.time() - t_start)/nentries_done
+    eta = time_per_entry * (nentries_total - nentries_done)
+
+    print("Evaluated on {} out of {} events".format(nentries_done, nentries_total))    
+    print("Estimated time until completion: {}".format(str(timedelta(seconds=eta))))
+
+
+print("Total evaluation time: {:.4f} seconds.".format(time.time()-t_filestart))
+
