@@ -139,7 +139,7 @@ def train_adversary(loader, clsf, adv, optimizer, device, loss_parameter):
         #print(adv_inp.shape)
         pi, sigma, mu = adv(adv_inp)
         #cl_out = clsf(cl_data)
-        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(cl_out[mask_bkg]), 1)))
+        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)))
         loss2.backward()
         loss = loss1 - loss_parameter*loss2
   #      print ("loss1",loss1.item())
@@ -213,7 +213,7 @@ def test_combined(loader, clsf, adv, device, loss_parameter):
 
         cl_out = cl_out.clamp(0, 1)
         cl_out[cl_out!=cl_out] = 0
-        
+
         adv_inp = torch.cat((torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]), 1)), torch.reshape(adv_data.x[mask_bkg], (len(adv_data.x[mask_bkg]), 1))), 1)
         pi, sigma, mu = adv(adv_inp)
         loss1 = F.binary_cross_entropy(cl_out, new_y)
