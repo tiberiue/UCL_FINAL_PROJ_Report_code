@@ -29,7 +29,30 @@ import math
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 import pandas as pd
-from ..GNN_model.models import mdn_loss
+from ..GNN_model_weight.models import mdn_loss
+
+def GetPtWeight(dsid, pt, filename, SF):
+    weights_file = uproot.open(filename)
+    flatweights_bg = weights_file["bg_inv"].to_numpy()
+    flatweights_sig = weights_file["h_sig_inv"].to_numpy()
+
+    scale_factor = 1
+    if dsid > 370000:
+        arr = flatweights_sig
+        scale_factor=1
+    else:
+        arr = flatweights_bg
+        scale_factor = SF #balancing out the weight integral
+    n = -1
+    for el in arr[1]:
+        if pt > el:
+            n+=1
+            continue
+        else:
+            break
+    if pt>arr[1][-1]:
+        return 0
+    return arr[0][n]*scale_factor*10**4
 
 def load_yaml(file_name):
     assert(os.path.exists(file_name))
@@ -52,7 +75,7 @@ def to_categorical(y, num_classes=None, dtype='float32'):
     categorical = np.reshape(categorical, output_shape)
     return categorical
 
-def create_train_dataset_fulld_new(z, k, d, edge1, edge2, label):
+def create_train_dataset_fulld_new(z, k, d, edge1, edge2, weight, label):
     graphs = []
     for i in range(len(z)):
         if (len(edge1[i])== 0) or (len(edge2[i])== 0):
@@ -63,7 +86,7 @@ def create_train_dataset_fulld_new(z, k, d, edge1, edge2, label):
         vec.append(np.array([d[i], z[i], k[i]]).T)
         vec = np.array(vec)
         vec = np.squeeze(vec)
-        graphs.append(Data(x=torch.tensor(vec, dtype=torch.float), edge_index=edge, y=torch.tensor(label[i], dtype=torch.float)))
+        graphs.append(Data(x=torch.tensor(vec, dtype=torch.float), edge_index=edge, weights =torch.tensor(weight[i], dtype=torch.float), y=torch.tensor(label[i], dtype=torch.float)))
     return graphs
 
 def create_train_dataset_fulld(z, k, d, p1, p2, label):
@@ -104,7 +127,9 @@ def train(loader, model, device, optimizer):
         optimizer.zero_grad()
         output = model(data)
         new_y = torch.reshape(data.y, (int(list(data.y.shape)[0]),1))
-        loss = F.binary_cross_entropy(output, new_y)
+        new_w = torch.reshape(data.weights, (int(list(data.weights.shape)[0]),1)) ## add weights
+
+        loss = F.binary_cross_entropy(output, new_y, weight = new_w)
         loss.backward()
 #        print ("data.num_graphs",data.num_graphs)
 #        print ("loss.item()",loss.item())
@@ -128,18 +153,20 @@ def train_adversary(loader, clsf, adv, optimizer, device, loss_parameter):
         cl_data = data[0].to(device)
         adv_data = data[1].to(device)
         new_y = torch.reshape(cl_data.y, (int(list(cl_data.y.shape)[0]),1))
+        new_w = torch.reshape(cl_data.weights, (int(list(cl_data.weights.shape)[0]),1)) ## add weights
 
         mask_bkg = new_y.lt(0.5)
         optimizer.zero_grad()
         cl_out = clsf(cl_data)
-        loss1 = F.binary_cross_entropy(cl_out, new_y)
+        loss1 = F.binary_cross_entropy(cl_out, new_y, weight = new_w)
         #print(torch.reshape(cl_out, (len(cl_out), 1)), torch.reshape(cl_out, (len(cl_out), 1)).shape)
         #print(adv_data.x, adv_data.x.shape)
         adv_inp = torch.cat((torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]), 1)), torch.reshape(adv_data.x[mask_bkg], (len(adv_data.x[mask_bkg]), 1))), 1)
         #print(adv_inp.shape)
         pi, sigma, mu = adv(adv_inp)
         #cl_out = clsf(cl_data)
-        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(cl_out[mask_bkg]), 1)))
+        #loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(cl_out[mask_bkg]), 1)),new_w)
+        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w)
         loss2.backward()
         loss = loss1 - loss_parameter*loss2
   #      print ("loss1",loss1.item())
@@ -166,6 +193,8 @@ def train_combined(loader, clsf, adv, optimizer_cl, optimizer_adv, device, loss_
         cl_data = data[0].to(device)
         adv_data = data[1].to(device)
         new_y = torch.reshape(cl_data.y, (int(list(cl_data.y.shape)[0]),1))
+        new_w = torch.reshape(cl_data.weights, (int(list(cl_data.weights.shape)[0]),1))
+
         mask_bkg = new_y.lt(0.5)
         optimizer_cl.zero_grad()
         optimizer_adv.zero_grad()
@@ -177,8 +206,8 @@ def train_combined(loader, clsf, adv, optimizer_cl, optimizer_adv, device, loss_
         adv_inp = torch.cat((torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]), 1)), torch.reshape(adv_data.x[mask_bkg], (len(adv_data.x[mask_bkg]), 1))), 1)
         pi, sigma, mu = adv(adv_inp)
 
-        loss1 = F.binary_cross_entropy(cl_out, new_y)
-        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)))
+        loss1 = F.binary_cross_entropy(cl_out, new_y, weight = new_w)
+        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w)
         loss = loss1 - loss_parameter*loss2
 #        loss = loss1
         loss.backward()
@@ -210,14 +239,15 @@ def test_combined(loader, clsf, adv, device, loss_parameter):
         new_y = torch.reshape(cl_data.y, (int(list(cl_data.y.shape)[0]),1))
         mask_bkg = new_y.lt(0.5)
         cl_out = clsf(cl_data)
+        new_w = torch.reshape(cl_data.weights, (int(list(cl_data.weights.shape)[0]),1))
 
         cl_out = cl_out.clamp(0, 1)
         cl_out[cl_out!=cl_out] = 0
-        
+
         adv_inp = torch.cat((torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]), 1)), torch.reshape(adv_data.x[mask_bkg], (len(adv_data.x[mask_bkg]), 1))), 1)
         pi, sigma, mu = adv(adv_inp)
-        loss1 = F.binary_cross_entropy(cl_out, new_y)
-        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)))
+        loss1 = F.binary_cross_entropy(cl_out, new_y, weight = new_w)
+        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w)
         loss = loss1 - loss_parameter*loss2
         loss_clsf += cl_data.num_graphs * loss1.item()
         loss_adv += cl_data.num_graphs * loss2.item()

@@ -452,13 +452,13 @@ def gaussian_probability(sigma, mu, target):
     return torch.prod(ret, 2)
 
 
-def mdn_loss(pi, sigma, mu, target):
+def mdn_loss(pi, sigma, mu, target, weight):
     """Calculates the error, given the MoG parameters and the target
     The loss is the negative log likelihood of the data given the MoG
     parameters.
     """
     prob = pi * gaussian_probability(sigma, mu, target)
-    nll = -torch.log(torch.sum(prob, dim=1))
+    nll = -weight*torch.log(torch.sum(prob, dim=1))
     return torch.mean(nll)
 
 def sample(pi, sigma, mu):
