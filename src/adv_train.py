@@ -216,12 +216,11 @@ if __name__ == "__main__":
     val_acc = []
     path_to_store = config['adversary']['path_to_store'] ## path to store models txt files
 
-    model_name = config['adversary']['model_name']
-    metrics_filename = path_to_store+"Models/"+"losses_"+model_name+datetime.now().strftime("%d%m-%H%M")+".txt"
 
     save_adv_every_epoch = config['adversary']['save_adv_every_epoch']
     adv_model_name = config['adversary']['adv_model_name']
     n_epochs_adv = config['adversary']['n_epochs_adv']
+    metrics_filename = path_to_store+"losses_"+adv_model_name+datetime.now().strftime("%d%m-%H%M")+".txt"
 
 
     for epoch in range(n_epochs_adv): # this may need to be bigger
@@ -243,6 +242,6 @@ if __name__ == "__main__":
         metrics = pd.DataFrame({"Train_Loss_adv":train_loss_adv,"Train_Loss_clsf":train_loss_clsf,"Train_Loss_total":train_loss_total,"Val_Loss_Adv":val_loss_adv,"Val_loss_Class":val_loss_clsf,"val_loss_total":val_loss_total, "Train_Acc":train_acc,"Val_Acc":val_acc})
         metrics.to_csv(metrics_filename, index = False)
         if (save_adv_every_epoch):
-            torch.save(adv.state_dict(), path_to_store+"Models/"+adv_model_name+"e{:03d}".format(epoch+1)+"_{:.5f}".format(val_loss_adv[epoch])+".pt")
+            torch.save(adv.state_dict(), path_to_store+adv_model_name+"e{:03d}".format(epoch+1)+"_{:.5f}".format(val_loss_adv[epoch])+".pt")
         elif epoch == n_epochs-1:
-            torch.save(adv.state_dict(), path_to_store+"Models/"+adv_model_name+"e{:03d}".format(epoch+1)+"_{:.5f}".format(val_loss_adv[epoch])+".pt")
+            torch.save(adv.state_dict(), path_to_store+adv_model_name+"e{:03d}".format(epoch+1)+"_{:.5f}".format(val_loss_adv[epoch])+".pt")

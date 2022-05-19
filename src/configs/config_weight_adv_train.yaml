@@ -1,6 +1,8 @@
 data:
   path_to_trainfiles: "/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*_train.root"  # /sps/atlas/k/khandoga/MySamples90/*_train.root /sps/atlas/k/khandoga/MySamplesS40/user.mykhando.27366163._000001.tree.root_train.root
-  path_to_save: "/sps/atlas/j/jzahredd/LJPTagger/latest/ljptagger/Models/"
+  path_to_save: "/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/"
+  weights_file: "/afs/cern.ch/work/j/jzahredd/LJPTagger/ljptagger/final/flat_weights_tr.root"
+  scale_factor: 14.475606
 
 architecture:
   batch_size: 2058
@@ -13,12 +15,11 @@ architecture:
   loss_parameter: 0.1 # parameter that appears in the total loss (total loss = loss1 - loss_parameter*loss2)
 
 classifier:
-  path_to_classifier_ckpt: "/sps/atlas/j/jzahredd/LJPTagger/latest/ljptagger/Models/LundNet_longrun_e001_0.24174.pt"
+  path_to_classifier_ckpt: "/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/LundNet_weighted_e060_0.27473.pt"
   choose_model: LundNet ## LundNet, GATNet, GINNet, EdgeGinNet, PNANet
 
 adversary:
   save_adv_every_epoch: True
-  adv_model_name: "adv_"
+  adv_model_name: "adv_weighted_"
   n_epochs_adv: 20
-  path_to_store: "/sps/atlas/j/jzahredd/LJPTagger/latest/ljptagger/"
-  model_name: "lund_adv_25_negloss_lambda10__"
+  path_to_store: "/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/"
