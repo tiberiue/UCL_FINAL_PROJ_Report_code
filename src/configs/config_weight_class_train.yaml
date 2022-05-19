@@ -1,9 +1,9 @@
 data:
   path_to_trainfiles: "/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*_train.root"  # /sps/atlas/k/khandoga/MySamplesS40/user.mykhando.27366163._000001.tree.root_train.root
   path_to_save: "/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/"
-    model_name: "LundNet_weighted_"
-    weights_file: "/afs/cern.ch/work/j/jzahredd/LJPTagger/ljptagger/final/flat_weights_tr.root"
-    scale_factor: 14.475606
+  model_name: "LundNet_weighted_"
+  weights_file: "/afs/cern.ch/work/j/jzahredd/LJPTagger/ljptagger/final/flat_weights_tr.root"
+  scale_factor: 14.475606
 
 architecture:
   batch_size: 2048
@@ -15,4 +15,4 @@ architecture:
 
 retrain:
   flag: False
-    path_to_ckpt: "/sps/atlas/k/khandoga/TrainGNN/Models/LundNet_ufob_e012_0.12481.pt"
+  path_to_ckpt: "/sps/atlas/k/khandoga/TrainGNN/Models/LundNet_ufob_e012_0.12481.pt"

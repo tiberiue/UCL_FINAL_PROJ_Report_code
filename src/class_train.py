@@ -159,7 +159,7 @@ if __name__ == "__main__":
         model = PNANet()
 
     flag = config['retrain']['flag']
-    path_to_ckpt = config['retrain']['flag']['path_to_ckpt']
+    path_to_ckpt = config['retrain']['path_to_ckpt']
 
     if flag==True:
         path = path_to_ckpt
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     train_bgrej = []
     val_bgrej = []
 
-    model_name = config['data']['path_to_save']['model_name']
+    model_name = config['data']['model_name']
     path_to_save = config['data']['path_to_save']
     train_loss = []
     val_loss = []
