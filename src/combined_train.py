@@ -235,11 +235,11 @@ if __name__ == "__main__":
     val_jsdbg = []
 
     path_to_save_combined = config["combined"]["path_to_save_combined"]## path to store models txt files
-    model_name = f"class_lambda{lambda_parameter}_lossp{loss_parameter}_lrr{lr_ratio}_s50"
-    metrics_filename = path_to_save_combined+"Models/"+"losses_"+model_name+datetime.now().strftime("%d%m-%H%M")+".txt"
 
-    save_adv_every_epoch = config["combined"]["save_adv_every_epoch"]
-    adv_model_name = f"adv_class_lambda{lambda_parameter}_lossp{loss_parameter}_lrr{lr_ratio}"
+    model_name = f"combined_class_lambda{lambda_parameter}_lossp{loss_parameter}_lrr{lr_ratio}_s50"
+    adv_model_name = f"combined_adv_class_lambda{lambda_parameter}_lossp{loss_parameter}_lrr{lr_ratio}"
+
+    metrics_filename = path_to_save_combined+"losses_"+model_name+datetime.now().strftime("%d%m-%H%M")+".txt"
 
     n_epochs_common = config["combined"]["n_epochs_common"]
     save_every_epoch = config["combined"]["save_every_epoch"]
@@ -288,8 +288,8 @@ if __name__ == "__main__":
             "val_loss_total":val_loss_total, "Train_jds":train_jds,"Val_jds":val_jds,"Train_bgrej":train_bgrej,"Val_bgrej":val_bgrej, "Train_jsdbg":train_jsdbg,"Val_jsdbg":val_jsdbg})
         metrics.to_csv(metrics_filename, index = False)
         if (save_every_epoch):
-            torch.save(clsf.state_dict(), path_to_save_combined+"Models/"+model_name+"e{:03d}".format(epoch+1)+"_{:.5f}".format(val_loss_total[epoch])+"_comb_"+".pt")
-            torch.save(adv.state_dict(), path_to_save_combined+"Models/"+adv_model_name+"e{:03d}".format(epoch+1)+"_{:.5f}".format(val_loss_adv[epoch])+"_comb_"+".pt")
+            torch.save(clsf.state_dict(), path_to_save_combined+model_name+"e{:03d}".format(epoch+1)+"_{:.5f}".format(val_loss_total[epoch])+"_comb_"+".pt")
+            torch.save(adv.state_dict(), path_to_save_combined+adv_model_name+"e{:03d}".format(epoch+1)+"_{:.5f}".format(val_loss_adv[epoch])+"_comb_"+".pt")
 
       #  elif epoch == n_epochs-1:
       #      torch.save(clsf.state_dict(), path+"Models/"+model_name+"_ct_"+"e{:03d}".format(epoch+1)+"_{:.5f}".format(val_loss_total[epoch])+".pt")
