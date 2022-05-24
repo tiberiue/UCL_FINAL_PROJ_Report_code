@@ -198,7 +198,7 @@ if __name__ == "__main__":
                                           "fjet_eta": "float32",
                                           "fjet_phi": "float32",
                                           "fjet_m": "float32",
-                                          "fjet_weight_pt_dR": "float32"
+                                          "fjet_weight_pt": "float32"
                                           })
 
             #Save branches
@@ -210,7 +210,7 @@ if __name__ == "__main__":
                                 "fjet_eta": jet_etas,
                                 "fjet_phi": jet_phis,
                                 "fjet_m": jet_ms,
-                                "fjet_weight_pt_dR": ptweights,
+                                "fjet_weight_pt": ptweights,
                                 })
 
         delta_t_save = time.time() - t_start - delta_t_fileax - delta_t_pred
