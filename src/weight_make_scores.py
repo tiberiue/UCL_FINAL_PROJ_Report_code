@@ -23,8 +23,8 @@ from torch_geometric.utils import degree
 import os.path
 
 
-from tools.GNN_model.models import *
-from tools.GNN_model.utils  import *
+from tools.GNN_model_weight.models import *
+from tools.GNN_model_weight.utils  import *
 
 
 print("Libraries loaded!")
@@ -133,7 +133,9 @@ if __name__ == "__main__":
         labels = to_categorical(labels, 2)
         labels = np.reshape(labels[:,1], (len(all_lund_zs), 1))
 
-        dataset = create_train_dataset_fulld_new(all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, labels)
+        flat_weights = np.vectorize(GetPtWeight)(dsids, jet_pts, filename=config['data']['weights_file'], SF=config['data']['scale_factor'])
+
+        dataset = create_train_dataset_fulld_new(all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels) ## add weights
         s_evt = 0
         events = 100
         #dataset = create_train_dataset_fulld_new(all_lund_zs[s_evt:events], all_lund_kts[s_evt:events], all_lund_drs[s_evt:events], parent1[s_evt:events], parent2[s_evt:events], labels[s_evt:events])
