@@ -126,6 +126,7 @@ class LundNet(torch.nn.Module):
 
 class GATNet(torch.nn.Module):
     def __init__(self, in_channels):
+        in_channels = 3
         super(GATNet, self).__init__()
         self.conv1 = GATConv(in_channels, 16, heads=8, dropout=0.1)
         self.conv2 = GATConv(16 * 8, 16, heads=8, dropout=0.1)
@@ -296,7 +297,7 @@ class PNANet(torch.nn.Module):
     def __init__(self,in_channels):
         aggregators = ['sum','mean', 'min', 'max', 'std']
         scalers = ['identity', 'amplification', 'attenuation',"linear",'inverse_linear']
-
+        in_channels = 3
         super(PNANet, self).__init__()
         self.conv1 = PNAConv(in_channels, out_channels=32, deg=deg, post_layers=1,aggregators=aggregators,
                                             scalers = scalers)
