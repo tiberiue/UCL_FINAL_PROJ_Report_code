@@ -19,9 +19,14 @@ build_image:
                        --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
                        --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHORT_SHA}"
 
-#run_stage:
-#  stage: run
-#  image: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-#  script:
-#    - source /miniconda/bin/activate
-#    - conda activate rootenv
+  only:
+    changes:
+      - Dockerfile
+
+run_stage:
+  stage: run
+  image: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  script:
+    - source /miniconda/bin/activate
+    - conda activate rootenv
+    - python test.py
