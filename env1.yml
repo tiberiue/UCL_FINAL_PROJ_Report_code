@@ -1,0 +1,8 @@
+name: rootenv
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+  - flask
+  - pip:
+    - uproot==4.0.11

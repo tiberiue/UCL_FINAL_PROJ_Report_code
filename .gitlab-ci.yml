@@ -1,0 +1,18 @@
+stages:
+  - greeting
+  - build
+
+hello world:
+  stage: greeting
+  script:
+    - echo "Hello World"
+
+build_image:
+  stage: build
+  variables:
+    GIT_STRATEGY: fetch
+    TO: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  tags:
+    - docker-image-build
+  script:
+    - ignore
