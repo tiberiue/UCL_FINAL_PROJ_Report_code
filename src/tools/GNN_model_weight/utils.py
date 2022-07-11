@@ -166,7 +166,7 @@ def train_adversary(loader, clsf, adv, optimizer, device, loss_parameter):
         pi, sigma, mu = adv(adv_inp)
         #cl_out = clsf(cl_data)
         #loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(cl_out[mask_bkg]), 1)),new_w)
-        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w)
+        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w[mask_bkg])
         loss2.backward()
         loss = loss1 - loss_parameter*loss2
   #      print ("loss1",loss1.item())
@@ -207,7 +207,7 @@ def train_combined(loader, clsf, adv, optimizer_cl, optimizer_adv, device, loss_
         pi, sigma, mu = adv(adv_inp)
 
         loss1 = F.binary_cross_entropy(cl_out, new_y, weight = new_w)
-        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w)
+        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w[mask_bkg])
         loss = loss1 - loss_parameter*loss2
 #        loss = loss1
         loss.backward()
@@ -247,7 +247,7 @@ def test_combined(loader, clsf, adv, device, loss_parameter):
         adv_inp = torch.cat((torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]), 1)), torch.reshape(adv_data.x[mask_bkg], (len(adv_data.x[mask_bkg]), 1))), 1)
         pi, sigma, mu = adv(adv_inp)
         loss1 = F.binary_cross_entropy(cl_out, new_y, weight = new_w)
-        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w)
+        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w[mask_bkg])
         loss = loss1 - loss_parameter*loss2
         loss_clsf += cl_data.num_graphs * loss1.item()
         loss_adv += cl_data.num_graphs * loss2.item()
