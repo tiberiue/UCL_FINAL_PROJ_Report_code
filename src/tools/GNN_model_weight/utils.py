@@ -75,6 +75,21 @@ def to_categorical(y, num_classes=None, dtype='float32'):
     categorical = np.reshape(categorical, output_shape)
     return categorical
 
+def create_train_dataset_fulld_new_wNtrk(z, k, d, Ntrk, edge1, edge2, weight, label):
+    graphs = []
+    for i in range(len(z)):
+        if (len(edge1[i])== 0) or (len(edge2[i])== 0):
+            continue
+        else:
+            edge = torch.tensor(np.array([edge1[i], edge2[i]]) , dtype=torch.long)
+        vec = []
+        vec.append(np.array([d[i], z[i], k[i]]).T)
+        vec = np.array(vec)
+        vec = np.squeeze(vec)
+        graphs.append(Data(x=torch.tensor(vec, dtype=torch.float), Nconstituents = torch.tensor(Ntrk[i], dtype=torch.float), edge_index=edge, weights =torch.tensor(weight[i], dtype=torch.float), y=torch.tensor(label[i], dtype=torch.float)))
+    return graphs
+
+
 def create_train_dataset_fulld_new(z, k, d, edge1, edge2, weight, label):
     graphs = []
     for i in range(len(z)):
