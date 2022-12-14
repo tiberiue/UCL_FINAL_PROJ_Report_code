@@ -54,6 +54,27 @@ def GetPtWeight(dsid, pt, filename, SF):
         return 0
     return arr[0][n]*scale_factor*10**4
 
+
+def GetPtWeight_2( dsid , pt, filename, SF):
+    weights_file = uproot.open(filename)
+    flatweights_bg = weights_file["bg_inv"].to_numpy()
+    flatweights_sig = weights_file["h_sig_inv"].to_numpy()
+
+    lenght_sig = len(flatweights_bg[0])
+    lenght_bkg = len(flatweights_bg[0])
+    scale_factor = 14.475606
+    weight_out = []
+    for i in range ( 0,len(dsid) ):
+        pt_bin = int( (pt[i]/3000)*lenght_sig )
+        if pt_bin==lenght_sig :
+            pt_bin = lenght_sig-1
+        if dsid[i] < 370000 :
+            weight_out.append( (flatweights_bg[0][pt_bin]*scale_factor)*10**4 )
+        if dsid[i] > 370000 :
+            weight_out.append( (flatweights_sig[0][pt_bin])*10**4 )
+    return np.array(weight_out)
+
+
 def load_yaml(file_name):
     assert(os.path.exists(file_name))
     with open(file_name) as f:
@@ -124,6 +145,24 @@ def create_train_dataset_fulld(z, k, d, p1, p2, label):
         edge = torch.tensor(np.array([edge1, edge2]), dtype=torch.long)
         graphs.append(Data(x=torch.tensor(vec, dtype=torch.float), edge_index=edge, y=torch.tensor(label[i], dtype=torch.float)))
     return graphs
+
+def create_train_dataset_fulld_new_Ntrk_pt_weight_file( graphs , z, k, d, edge1, edge2, weight, label, Ntracks, jet_pts  ):
+    #graphs = []
+    for i in range(len(z)):
+        if (len(edge1[i])== 0) or (len(edge2[i])== 0):
+            continue
+        else:
+            edge = torch.tensor(np.array([edge1[i], edge2[i]]) , dtype=torch.long)
+        vec = []
+        vec.append(np.array([d[i], z[i], k[i]]).T)
+        vec = np.array(vec)
+        vec = np.squeeze(vec)
+
+        graphs.append(Data(x=torch.tensor(vec, dtype=torch.float).detach(), edge_index = torch.tensor(edge).detach() , Nconstituents=torch.tensor(Ntracks[i], dtype=torch.int).detach() ,pt=torch.tensor(jet_pts[i], dtype=torch.float).detach() , weights =torch.tensor(weight[i], dtype=torch.float).detach(), y=torch.tensor(label[i], dtype=torch.float).detach() ))
+    return graphs
+
+
+
 
 def create_adversary_trainset(pt, mass):
     graphs = [Data(x=torch.tensor([p], dtype=torch.float), y=torch.tensor([m], dtype=torch.float)) for p, m in zip(pt, mass)]
