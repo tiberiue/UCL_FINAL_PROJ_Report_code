@@ -87,51 +87,71 @@ if __name__ == "__main__":
     jet_ungroomed_pts = np.array([])
     vector = []
     mcweights = np.array([])
+    
+    jet_pts_adv = np.array([])
+    jet_ms_adv = np.array([])
+    dataset = []
+
 
     for file in files:
-
         print("Loading file",file)
         with uproot.open(file) as infile:
-
             tree = infile[intreename]
-            dsids = np.append( dsids, np.array(tree["DSID"].array()) )
-            #eta = ak.concatenate(eta, pad_ak3(tree["Akt10TruthJet_jetEta"].array(), 30),axis=0)
-            mcweights = np.append( mcweights, np.array(tree["mcWeight"].array()) )
-            NBHadrons = np.append( NBHadrons, ak.to_numpy(tree["Akt10UFOJet_GhostBHadronsFinalCount"].array()))
 
-            parent1 = np.append(parent1, tree["UFO_edge1"].array(library="np"),axis=0)
-            parent2 = np.append(parent2, tree["UFO_edge2"].array(library="np"),axis=0)
+            method = 1
+            if method==0 :
+                dsids = np.append( dsids, np.array(tree["DSID"].array()) )
+                #eta = ak.concatenate(eta, pad_ak3(tree["Akt10TruthJet_jetEta"].array(), 30),axis=0)                                              
+                mcweights = tree["mcWeight"].array()
+                NBHadrons = np.append( NBHadrons, ak.to_numpy(tree["Akt10UFOJet_GhostBHadronsFinalCount"].array()))
 
-            #Get jet kinematics
-            jet_pts = np.append(jet_pts, tree["UFOSD_jetPt"].array(library="np"))
-            jet_etas = np.append(jet_etas, tree["UFOSD_jetEta"].array(library="np"))
-            jet_phis = np.append(jet_phis, tree["UFOSD_jetPhi"].array(library="np"))
+                parent1 = np.append(parent1, tree["UFO_edge1"].array(library="np"),axis=0)
+                parent2 = np.append(parent2, tree["UFO_edge2"].array(library="np"),axis=0)
+                jet_ms = np.append(jet_ms, ak.to_numpy(tree["UFOSD_jetM"].array()))
+                jet_pts = np.append(jet_pts, ak.to_numpy(tree["UFOSD_jetPt"].array()))
+                #Get jet kinematics                                                                                                                                                                                   
 
-    #        jet_truth_pts = np.append(jet_truth_pts, tree["Truth_jetPt"].array(library="np"))
-    #        jet_truth_etas = np.append(jet_truth_etas, ak.to_numpy(tree["Truth_jetEta"].array(library="np")))
+                #Get Lund variables                                                                                                                               
+                all_lund_zs = np.append(all_lund_zs,tree["UFO_jetLundz"].array(library="np") )
+                all_lund_kts = np.append(all_lund_kts, tree["UFO_jetLundKt"].array(library="np") )
+                all_lund_drs = np.append(all_lund_drs, tree["UFO_jetLundDeltaR"].array(library="np") )
 
-            jet_ms = np.append(jet_ms, ak.to_numpy(tree["UFOSD_jetM"].array()))
+            if method==1 :
 
-            #Get Lund variables
-            all_lund_zs = np.append(all_lund_zs,tree["UFO_jetLundz"].array(library="np") )
-            all_lund_kts = np.append(all_lund_kts, tree["UFO_jetLundKt"].array(library="np") )
-            all_lund_drs = np.append(all_lund_drs, tree["UFO_jetLundDeltaR"].array(library="np") )
+                jet_pts_adv = np.append(jet_pts_adv, ak.to_numpy(tree["UFOSD_jetPt"].array()))
+                jet_ms_adv = np.append(jet_ms_adv, ak.to_numpy(tree["UFOSD_jetM"].array()))
+                                
+                dsids = tree["DSID"].array(library="np")
+                NBHadrons = tree["Akt10UFOJet_GhostBHadronsFinalCount"].array(library="np")
+                parent1 =  tree["UFO_edge1"].array(library="np")
+                parent2 = tree["UFO_edge2"].array(library="np")
+                jet_ms =  ak.to_numpy(tree["UFOSD_jetM"].array() )
+                all_lund_zs = tree["UFO_jetLundz"].array(library="np")
+                all_lund_kts =  tree["UFO_jetLundKt"].array(library="np")
+                all_lund_drs = tree["UFO_jetLundDeltaR"].array(library="np")
+                N_tracks = tree["UFO_Ntrk"].array(library="np")
+                jet_pts = tree["UFOSD_jetPt"].array(library="np")
+                labels = ( dsids > 370000 ) & ( NBHadrons == 0 )
+                labels = to_categorical(labels, 2)
+                labels = np.reshape(labels[:,1], (len(all_lund_zs), 1))
+                flat_weights = GetPtWeight_2( dsids, jet_pts, filename=config['data']['weights_file'], SF=config['data']['scale_factor'])
+                dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts )
 
-    #Get labels
+    if method==0 :
+        #Get labels                                                                                                                                                                    
+        labels = ( dsids > 370000 ) & ( NBHadrons == 0 )
+        flat_weights = np.vectorize(GetPtWeight)(dsids, jet_pts, filename=config['data']['weights_file'], SF=config['data']['scale_factor'])
+        #print(labels)                                                                                                                                 
+        labels = to_categorical(labels, 2)
+        labels = np.reshape(labels[:,1], (len(all_lund_zs), 1))
 
-    labels = ( dsids > 370000 ) & ( NBHadrons == 0 ) # do NBHadrons == 0 for W bosons, NBHadrons > 0 for Tops
-    #print(labels)
-    labels = to_categorical(labels, 2)
-    labels = np.reshape(labels[:,1], (len(all_lund_zs), 1))
-    flat_weights = np.vectorize(GetPtWeight)(dsids, jet_pts, filename=config['data']['weights_file'], SF=config['data']['scale_factor'])
+        print (int(labels.sum()),"labeled as signal out of", len(labels), "total events")
 
+        delta_t_fileax = time.time() - t_start
+        print("Opened data in {:.4f} seconds.".format(delta_t_fileax))
 
-    t_start = time.time()
-    #W bosons
-    dataset = create_train_dataset_fulld_new(all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels)
-    #train_loader = DataLoader(dataset, batch_size=1024, shuffle=True)
-    delta_t_fileax = time.time() - t_start
-    print("Created dataset in {:.4f} seconds.".format(delta_t_fileax))
+        dataset = create_train_dataset_fulld_new(all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels) ## add weights                                                                         
+        #dataset = create_train_dataset_fulld_new(all_lund_zs[s_evt:events], all_lund_kts[s_evt:events], all_lund_drs[s_evt:events], parent1[s_evt:events], parent2[s_evt:events], labels[s_evt:events])                                           
 
 
     deg = torch.zeros(10, dtype=torch.long)
@@ -146,9 +166,11 @@ if __name__ == "__main__":
     test_size = config["architecture"]["test_size"]
 
 
-    ms = np.array(jet_ms).reshape(len(jet_ms), 1)
-    pts = np.array(np.log(jet_pts)).reshape(len(jet_pts), 1)
-
+    #ms = np.array(jet_ms).reshape(len(jet_ms), 1)
+    #pts = np.array(np.log(jet_pts)).reshape(len(jet_pts), 1)
+    ms = np.array(jet_ms_adv).reshape(len(jet_ms_adv), 1)
+    pts = np.array(np.log(jet_pts_adv)).reshape(len(jet_pts_adv), 1)
+    
 
     test_ds, test1_ds = train_test_split(dataset, test_size = test_size, random_state = 144)
     test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
@@ -185,18 +207,22 @@ if __name__ == "__main__":
         clsf = PNANet()
 
     clsf.load_state_dict(torch.load(path_to_classifier_ckpt))
-
+    #clsf.load_state_dict(torch.load(path_to_classifier_ckpt, map_location=torch.device('cpu')))
+    
     print ("Classifier model loaded, loading adversary.")
 
     #adv = Adversary()
     adv = Adversary(lambda_parameter, num_gaussians)
     path_to_adv_model_weights = config["adversary"]["path_to_adv_model_weights"]
     adv.load_state_dict(torch.load(path_to_adv_model_weights))
+    #adv.load_state_dict(torch.load(path_to_adv_model_weights, map_location=torch.device('cpu')))
     print ("Adversary loaded.")
 
     lr_optimizer = config["combined"]["lr_optimizer"]
 
     device = torch.device('cuda') # Usually gpu 4 worked best, it had the most memory available
+    #device = torch.device('cpu')
+    
     clsf.to(device)
     adv.to(device)
     optimizer_cl = torch.optim.Adam(clsf.parameters(), lr=lr_optimizer)
@@ -209,8 +235,6 @@ if __name__ == "__main__":
 
 
     MASSBINS = np.linspace(40, 300, (300 - 40) // 5 + 1, endpoint=True)
-
-
 
 
 
