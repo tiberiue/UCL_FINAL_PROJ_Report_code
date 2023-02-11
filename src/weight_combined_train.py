@@ -104,7 +104,7 @@ if __name__ == "__main__":
                 #eta = ak.concatenate(eta, pad_ak3(tree["Akt10TruthJet_jetEta"].array(), 30),axis=0)                                              
                 mcweights = tree["mcWeight"].array()
                 NBHadrons = np.append( NBHadrons, ak.to_numpy(tree["Akt10UFOJet_GhostBHadronsFinalCount"].array()))
-
+                
                 parent1 = np.append(parent1, tree["UFO_edge1"].array(library="np"),axis=0)
                 parent2 = np.append(parent2, tree["UFO_edge2"].array(library="np"),axis=0)
                 jet_ms = np.append(jet_ms, ak.to_numpy(tree["UFOSD_jetM"].array()))
@@ -118,8 +118,8 @@ if __name__ == "__main__":
 
             if method==1 :
 
-                jet_pts_adv = np.append(jet_pts_adv, ak.to_numpy(tree["UFOSD_jetPt"].array()))
-                jet_ms_adv = np.append(jet_ms_adv, ak.to_numpy(tree["UFOSD_jetM"].array()))
+                #jet_pts_adv = np.append(jet_pts_adv, ak.to_numpy(tree["UFOSD_jetPt"].array()))
+                #jet_ms_adv = np.append(jet_ms_adv, ak.to_numpy(tree["UFOSD_jetM"].array()))
                                 
                 dsids = tree["DSID"].array(library="np")
                 NBHadrons = tree["Akt10UFOJet_GhostBHadronsFinalCount"].array(library="np")
@@ -135,7 +135,7 @@ if __name__ == "__main__":
                 labels = to_categorical(labels, 2)
                 labels = np.reshape(labels[:,1], (len(all_lund_zs), 1))
                 flat_weights = GetPtWeight_2( dsids, jet_pts, filename=config['data']['weights_file'], SF=config['data']['scale_factor'])
-                dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts )
+                dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts, jet_ms )
 
     if method==0 :
         #Get labels                                                                                                                                                                    
@@ -168,19 +168,21 @@ if __name__ == "__main__":
 
     #ms = np.array(jet_ms).reshape(len(jet_ms), 1)
     #pts = np.array(np.log(jet_pts)).reshape(len(jet_pts), 1)
-    ms = np.array(jet_ms_adv).reshape(len(jet_ms_adv), 1)
-    pts = np.array(np.log(jet_pts_adv)).reshape(len(jet_pts_adv), 1)
+    
+    #ms = np.array(jet_ms_adv).reshape(len(jet_ms_adv), 1)
+    #pts = np.array(np.log(jet_pts_adv)).reshape(len(jet_pts_adv), 1)
     
 
-    test_ds, test1_ds = train_test_split(dataset, test_size = test_size, random_state = 144)
-    test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
+    #test_ds, test1_ds = train_test_split(dataset, test_size = test_size, random_state = 144)
+    #test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
 
-    adv_dataset = create_adversary_trainset(pts, ms)
-    conc_dataset = ConcatDataset(dataset, adv_dataset)
+    #adv_dataset = create_adversary_trainset(pts, ms)
+    #conc_dataset = ConcatDataset(dataset, adv_dataset)
 
 
-    conc_dataset= shuffle(conc_dataset,random_state=0)
-    train_ds, validation_ds = train_test_split(conc_dataset, test_size = test_size, random_state = 144)
+    #conc_dataset= shuffle(conc_dataset,random_state=0)
+    #train_ds, validation_ds = train_test_split(conc_dataset, test_size = test_size, random_state = 144)
+    train_ds, validation_ds = train_test_split(dataset, test_size = test_size, random_state = 144)
 
 
     adv_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
@@ -276,7 +278,7 @@ if __name__ == "__main__":
     for epoch in range(n_epochs_common): # this may need to be bigger
         print("Epoch:{}".format(epoch))
 
-        ad_lt, clsf_lt, total_lt =  train_combined(adv_loader, clsf, adv, optimizer_cl, optimizer_adv, device, loss_parameter)
+        ad_lt, clsf_lt, total_lt =  train_combined_2(adv_loader, clsf, adv, optimizer_cl, optimizer_adv, device, loss_parameter)
         train_loss_clsf.append(clsf_lt)
         train_loss_adv.append(ad_lt)
         train_loss_total.append(total_lt)

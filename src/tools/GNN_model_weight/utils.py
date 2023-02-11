@@ -146,7 +146,7 @@ def create_train_dataset_fulld(z, k, d, p1, p2, label):
         graphs.append(Data(x=torch.tensor(vec, dtype=torch.float), edge_index=edge, y=torch.tensor(label[i], dtype=torch.float)))
     return graphs
 
-def create_train_dataset_fulld_new_Ntrk_pt_weight_file( graphs , z, k, d, edge1, edge2, weight, label, Ntracks, jet_pts  ):
+def create_train_dataset_fulld_new_Ntrk_pt_weight_file( graphs , z, k, d, edge1, edge2, weight, label, Ntracks, jet_pts, jet_ms  ):
     #graphs = []
     for i in range(len(z)):
         if (len(edge1[i])== 0) or (len(edge2[i])== 0):
@@ -158,7 +158,7 @@ def create_train_dataset_fulld_new_Ntrk_pt_weight_file( graphs , z, k, d, edge1,
         vec = np.array(vec)
         vec = np.squeeze(vec)
 
-        graphs.append(Data(x=torch.tensor(vec, dtype=torch.float).detach(), edge_index = torch.tensor(edge).detach() , Nconstituents=torch.tensor(Ntracks[i], dtype=torch.int).detach() ,pt=torch.tensor(jet_pts[i], dtype=torch.float).detach() , weights =torch.tensor(weight[i], dtype=torch.float).detach(), y=torch.tensor(label[i], dtype=torch.float).detach() ))
+        graphs.append(Data(x=torch.tensor(vec, dtype=torch.float).detach(), edge_index = torch.tensor(edge).detach() , Nconstituents=torch.tensor(Ntracks[i], dtype=torch.int).detach() ,pt=torch.tensor(jet_pts[i], dtype=torch.float).detach() , weights =torch.tensor(weight[i], dtype=torch.float).detach(), mass=torch.tensor(jet_ms[i], dtype=torch.float).detach() , y=torch.tensor(label[i], dtype=torch.float).detach() ))
     return graphs
 
 
@@ -218,11 +218,12 @@ def train_adversary(loader, clsf, adv, optimizer, device, loss_parameter):
         adv_inp = torch.cat((torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]), 1)), torch.reshape(adv_data.x[mask_bkg], (len(adv_data.x[mask_bkg]), 1))), 1)
         #print(adv_inp.shape)
         pi, sigma, mu = adv(adv_inp)
+        print(pi)
         #cl_out = clsf(cl_data)
         #loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(cl_out[mask_bkg]), 1)),new_w)
         loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w[mask_bkg])
         loss2.backward()
-        loss = loss1 - loss_parameter*loss2
+        loss = loss1 + loss_parameter*loss2
   #      print ("loss1",loss1.item())
   #      print ("loss2",loss2.item())
   #      print ("loss",loss.item())
@@ -231,6 +232,55 @@ def train_adversary(loader, clsf, adv, optimizer, device, loss_parameter):
         loss_all += cl_data.num_graphs * loss.item()
         optimizer.step()
     return loss_adv / len(loader.dataset), loss_clsf / len(loader.dataset), loss_all / len(loader.dataset)
+
+######
+def train_adversary_2(loader, clsf, adv, optimizer, device, loss_parameter):
+    clsf.eval()
+    adv.train()
+    loss_adv = 0
+    loss_clsf = 0
+    loss_all = 0
+    batch_counter = 0
+    
+    for data in loader:
+        batch_counter+=1
+        
+        cl_data = data.to(device)
+        #adv_data = data[1].to(device)
+        new_y = torch.reshape(cl_data.y, (int(list(cl_data.y.shape)[0]),1))
+        new_w = torch.reshape(cl_data.weights, (int(list(cl_data.weights.shape)[0]),1)) ## add weights                                                                  
+       
+        new_pt = torch.reshape(cl_data.pt, (int(list(cl_data.pt.shape)[0]),1) )
+        new_mass = torch.reshape(cl_data.mass, (int(list(cl_data.mass.shape)[0]),1))
+
+
+        mask_bkg = new_y.lt(0.5)
+        optimizer.zero_grad()
+        cl_out = clsf(cl_data)
+        loss1 = F.binary_cross_entropy(cl_out, new_y, weight = new_w)
+        
+        #adv_inp = torch.cat((torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]),1) ), torch.reshape(cl_data.pt[mask_bkg], (int(list(cl_data.pt[mask_bkg].shape)[0]),1) ) ) , 1)
+        
+        adv_inp = torch.cat( (torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]),1)) , torch.reshape(new_pt[mask_bkg], (len(new_pt[mask_bkg]),1) ))  ,1)
+
+        #adv_inp = torch.cat( (torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]),1)) , torch.reshape(cl_data.pt[mask_bkg], (len(cl_data.pt[mask_bkg]),1) )   )  ,1)
+
+        pi, sigma, mu = adv(adv_inp)
+        
+        print(pi)
+        
+        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(new_mass[mask_bkg], (len(new_mass[mask_bkg]),1) ) , new_w[mask_bkg])
+        loss2.backward()
+        loss = loss1 + loss_parameter*loss2
+        
+        loss_clsf += cl_data.num_graphs * loss1.item()
+        loss_adv += cl_data.num_graphs * loss2.item()
+        loss_all += cl_data.num_graphs * loss.item()
+        optimizer.step()
+    return loss_adv / len(loader.dataset), loss_clsf / len(loader.dataset), loss_all / len(loader.dataset)
+
+
+
 
 def train_combined(loader, clsf, adv, optimizer_cl, optimizer_adv, device, loss_parameter):
     clsf.train()
@@ -262,7 +312,7 @@ def train_combined(loader, clsf, adv, optimizer_cl, optimizer_adv, device, loss_
 
         loss1 = F.binary_cross_entropy(cl_out, new_y, weight = new_w)
         loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w[mask_bkg])
-        loss = loss1 - loss_parameter*loss2
+        loss = loss1 + loss_parameter*loss2
 #        loss = loss1
         loss.backward()
         loss_clsf += cl_data.num_graphs * loss1.item()
@@ -281,6 +331,56 @@ def train_combined(loader, clsf, adv, optimizer_cl, optimizer_adv, device, loss_
     return loss_adv / len(loader.dataset), loss_clsf / len(loader.dataset), loss_all / len(loader.dataset)
 
 
+def train_combined_2(loader, clsf, adv, optimizer_cl, optimizer_adv, device, loss_parameter):
+    clsf.train()
+    adv.train()
+    loss_adv = 0
+    loss_clsf = 0
+    loss_all = 0
+    batch_counter = 0
+    jsd_total = 0
+
+    for data in loader:
+        batch_counter+=1
+        cl_data = data.to(device)
+        #adv_data = data[1].to(device)
+        new_y = torch.reshape(cl_data.y, (int(list(cl_data.y.shape)[0]),1))
+        new_w = torch.reshape(cl_data.weights, (int(list(cl_data.weights.shape)[0]),1))
+
+        new_pt = torch.reshape(cl_data.pt, (int(list(cl_data.pt.shape)[0]),1) )
+        new_mass = torch.reshape(cl_data.mass, (int(list(cl_data.mass.shape)[0]),1))
+        
+        
+        mask_bkg = new_y.lt(0.5)
+        optimizer_cl.zero_grad()
+        optimizer_adv.zero_grad()
+        cl_out = clsf(cl_data)
+
+        cl_out = cl_out.clamp(0, 1)
+        cl_out[cl_out!=cl_out] = 0
+
+        #adv_inp = torch.cat((torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]), 1)), torch.reshape(adv_data.x[mask_bkg], (len(adv_data.x[mask_bkg]), 1))), 1)
+        adv_inp = torch.cat( (torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]),1)) , torch.reshape(new_pt[mask_bkg], (len(new_pt[mask_bkg]),1) ))  ,1)
+        pi, sigma, mu = adv(adv_inp)
+
+        loss1 = F.binary_cross_entropy(cl_out, new_y, weight = new_w)
+        #loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w[mask_bkg])
+        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(new_mass[mask_bkg], (len(new_mass[mask_bkg]),1) ) , new_w[mask_bkg])
+        
+        loss = loss1 + loss_parameter*loss2
+        
+        loss.backward()
+        loss_clsf += cl_data.num_graphs * loss1.item()
+        loss_adv += cl_data.num_graphs * loss2.item()
+        loss_all += cl_data.num_graphs * loss.item()
+        optimizer_cl.step()
+        optimizer_adv.step()
+    return loss_adv / len(loader.dataset), loss_clsf / len(loader.dataset), loss_all / len(loader.dataset)
+
+
+
+
+
 def test_combined(loader, clsf, adv, device, loss_parameter):
     clsf.eval()
     adv.eval()
@@ -288,21 +388,30 @@ def test_combined(loader, clsf, adv, device, loss_parameter):
     loss_clsf = 0
     loss_all = 0
     for data in loader:
-        cl_data = data[0].to(device)
-        adv_data = data[1].to(device)
+        cl_data = data.to(device)
+        #adv_data = data[1].to(device)
         new_y = torch.reshape(cl_data.y, (int(list(cl_data.y.shape)[0]),1))
         mask_bkg = new_y.lt(0.5)
         cl_out = clsf(cl_data)
         new_w = torch.reshape(cl_data.weights, (int(list(cl_data.weights.shape)[0]),1))
 
+        new_pt = torch.reshape(cl_data.pt, (int(list(cl_data.pt.shape)[0]),1) )
+        new_mass = torch.reshape(cl_data.mass, (int(list(cl_data.mass.shape)[0]),1))
+        
+
         cl_out = cl_out.clamp(0, 1)
         cl_out[cl_out!=cl_out] = 0
-
-        adv_inp = torch.cat((torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]), 1)), torch.reshape(adv_data.x[mask_bkg], (len(adv_data.x[mask_bkg]), 1))), 1)
-        pi, sigma, mu = adv(adv_inp)
+        
         loss1 = F.binary_cross_entropy(cl_out, new_y, weight = new_w)
-        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w[mask_bkg])
-        loss = loss1 - loss_parameter*loss2
+
+        #adv_inp = torch.cat((torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]), 1)), torch.reshape(cl_data.pt[mask_bkg], (len(cl_data.pt[mask_bkg]), 1))), 1)
+        adv_inp = torch.cat( (torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]),1)) , torch.reshape(new_pt[mask_bkg], (len(new_pt[mask_bkg]),1) ))  ,1)
+        
+        pi, sigma, mu = adv(adv_inp)
+
+        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(new_mass[mask_bkg], (len(new_mass[mask_bkg]),1) ) , new_w[mask_bkg])
+        
+        loss = loss1 + loss_parameter*loss2
         loss_clsf += cl_data.num_graphs * loss1.item()
         loss_adv += cl_data.num_graphs * loss2.item()
         loss_all += cl_data.num_graphs * loss.item()
@@ -315,7 +424,7 @@ def get_accuracy(loader, model, device):
     model.eval()
     correct = 0
     for data in loader:
-        cl_data = data[0].to(device)
+        cl_data = data.to(device)
         new_y = torch.reshape(cl_data.y, (int(list(cl_data.y.shape)[0]),1))
         pred = model(cl_data).max(dim=1)[1]
         correct += pred.eq(new_y[0,:]).sum().item()
@@ -360,10 +469,11 @@ def aux_metrics(loader, clsf, adv, device, MASSBINS):
     mass_tagged = np.array([])
     mass_untagged = np.array([])
     for data in loader:
-        cl_data = data[0].to(device)
-        adv_data = data[1].to(device)
+        cl_data = data.to(device)
+        #adv_data = data[1].to(device)
         new_y = torch.reshape(cl_data.y, (int(list(cl_data.y.shape)[0]),1))
-    #    print ("true labels",new_y)
+        #    print ("true labels",new_y)
+        new_mass = torch.reshape(cl_data.mass, (int(list(cl_data.mass.shape)[0]),1))
         mask_bkg = new_y.lt(0.5)
     #    print ("mask_bkg",mask_bkg)
         cl_out = clsf(cl_data)
@@ -379,8 +489,13 @@ def aux_metrics(loader, clsf, adv, device, MASSBINS):
 #        print ("adv_data.x",adv_data.y)
 #        print ("mass tag",adv_data.y[mask_bkg&mask_tag])
 #        print ("mass untag",adv_data.y[mask_bkg&mask_untag])
-        p, _ = np.histogram(np.array(adv_data.y[mask_bkg&mask_tag].cpu()), bins=MASSBINS, density=1.)
-        f, _ = np.histogram(np.array(adv_data.y[mask_bkg&mask_untag].cpu()), bins=MASSBINS, density=1.)
+
+        #p, _ = np.histogram(np.array(adv_data.y[mask_bkg&mask_tag].cpu()), bins=MASSBINS, density=1.)
+        #f, _ = np.histogram(np.array(adv_data.y[mask_bkg&mask_untag].cpu()), bins=MASSBINS, density=1.)
+
+        p, _ = np.histogram(np.array(new_mass[mask_bkg&mask_tag].cpu()), bins=MASSBINS, density=1.)
+        f, _ = np.histogram(np.array(new_mass[mask_bkg&mask_untag].cpu()), bins=MASSBINS, density=1.)
+
         jsd = JSD(p,f)
         if math.isnan(jsd):
             nans+=1
