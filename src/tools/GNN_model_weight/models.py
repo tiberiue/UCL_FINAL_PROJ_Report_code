@@ -126,6 +126,91 @@ class LundNet(torch.nn.Module):
         #print(x.shape)
         return F.sigmoid(x)
 
+#dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file_PLUS( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts , jet_ms, Tau21, C2, D2, Angularity, FoxWolfram20, KtDR, PlanarFlow, Split12, ZCut12)
+class LundNet_Ntrk_Plus(torch.nn.Module):
+    def __init__(self):
+        super(LundNet_Ntrk_Plus, self).__init__()
+        self.conv1 = EdgeConv(nn.Sequential(nn.Linear(6, 32),
+                                            nn.BatchNorm1d(num_features=32),
+                                            nn.ReLU(),
+                                            nn.Linear(32, 32),
+                                            nn.BatchNorm1d(num_features=32),
+                                            nn.ReLU()),aggr='add')
+        self.conv2 = EdgeConv(nn.Sequential(nn.Linear(64, 32),
+                                            nn.BatchNorm1d(num_features=32),
+                                            nn.ReLU(),
+                                            nn.Linear(32, 32),
+                                            nn.BatchNorm1d(num_features=32),
+                                            nn.ReLU()),aggr='add')
+        self.conv3 = EdgeConv(nn.Sequential(nn.Linear(64,64),
+                                            nn.BatchNorm1d(num_features=64),
+                                            nn.ReLU(),
+                                            nn.Linear(64, 64),
+                                            nn.BatchNorm1d(num_features=64),
+                                            nn.ReLU()),aggr='add')
+        self.conv4 = EdgeConv(nn.Sequential(nn.Linear(128, 64),
+                                            nn.BatchNorm1d(num_features=64),
+                                            nn.ReLU(),
+                                            nn.Linear(64, 64),
+                                            nn.BatchNorm1d(num_features=64),
+                                            nn.ReLU()),aggr='add')
+        self.conv5 = EdgeConv(nn.Sequential(nn.Linear(128, 128),
+                                            nn.BatchNorm1d(num_features=128),
+                                            nn.ReLU(),
+                                            nn.Linear(128, 128),
+                                            nn.BatchNorm1d(num_features=128),
+                                            nn.ReLU()),aggr='add')
+        self.conv6 = EdgeConv(nn.Sequential(nn.Linear(256, 128),
+                                            nn.BatchNorm1d(num_features=128),
+                                            nn.ReLU(),
+                                            nn.Linear(128, 128),
+                                            nn.BatchNorm1d(num_features=128),
+                                            nn.ReLU()),aggr='add')
+
+        self.seq1 = nn.Sequential(nn.Linear(448, 384),
+                                nn.BatchNorm1d(num_features=384),
+                                nn.ReLU())
+        self.seq2 = nn.Sequential(nn.Linear(394, 256),
+                                  nn.ReLU())
+        self.seq3 = nn.Sequential(nn.Linear(256, 30),                                                                                     
+                                  nn.ReLU())                                                                                                                                
+        self.lin = nn.Linear(30, 1)                                                                                                              
+        #self.lin = nn.Linear(256, 1)
+
+
+#dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file_PLUS( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts , jet_ms, Tau21, C2, D2, Angularity, FoxWolfram20, KtDR, PlanarFlow, Split12, ZCut12)            
+    def forward(self, data):
+        x, edge_index, batch = data.x, data.edge_index, data.batch
+        x1 = self.conv1(x, edge_index)
+        x2 = self.conv2(x1, edge_index)
+        x3 = self.conv3(x2, edge_index)
+        x4 = self.conv4(x3, edge_index)
+        x5 = self.conv5(x4, edge_index)
+        x6 = self.conv6(x5, edge_index)
+        x = torch.cat((x1, x2, x3, x4, x5, x6), dim=1)
+        x = self.seq1(x)
+        x = global_mean_pool(x, batch)
+        N_tracksin = torch.unsqueeze(data.Nconstituents, 1)
+        Tau21_in = torch.unsqueeze(data.Tau21, 1)
+        C2_in = torch.unsqueeze(data.C2, 1)
+        D2_in = torch.unsqueeze(data.D2, 1)
+        Angularity_in = torch.unsqueeze(data.Angularity, 1)
+        FoxWolfram20_in = torch.unsqueeze(data.FoxWolfram20, 1)
+        KtDR_in = torch.unsqueeze(data.KtDR, 1)
+        PlanarFlow_in = torch.unsqueeze(data.PlanarFlow, 1)
+        Split12_in = torch.unsqueeze(data.Split12, 1)
+        ZCut12_in = torch.unsqueeze(data.ZCut12, 1)
+
+        #N_tracksin = torch.unsqueeze(N_tracksin, 1)
+        x = torch.cat( (x, N_tracksin, Tau21_in, C2_in, D2_in, Angularity_in, FoxWolfram20_in, KtDR_in, PlanarFlow_in, Split12_in, ZCut12_in  ), dim=1)
+        x = self.seq2(x)
+        x = F.dropout(x, p=0.1)
+        x = self.seq3(x)                                     
+        x = F.dropout(x, p=0.1)
+        x = self.lin(x)
+        return F.sigmoid(x)
+
+
 
 class LundNet_old(torch.nn.Module):
     def __init__(self):
@@ -185,6 +270,23 @@ class LundNet_old(torch.nn.Module):
         x5 = self.conv5(x4, edge_index)
         x6 = self.conv6(x5, edge_index)
         x = torch.cat((x1, x2, x3, x4, x5, x6), dim=1)
+        '''
+        print("x1->",x1)
+        print( len(x1[0]))
+        print("x2->",x2)
+        print( len(x2[0]))
+        print("x3->",x3)
+        print( len(x3[0]))
+        print("x4->",x4)
+        print( len(x4[0]))
+        print("x5->",x5)
+        print( len(x5[0]))
+        print("x6->",x6)
+        print( len(x6[0]))
+        print( len(x[30]) )
+        print( len(x) )
+        print(x[:2])
+        '''
         x = self.seq1(x)
         x = global_mean_pool(x, batch)
         x = self.seq2(x)

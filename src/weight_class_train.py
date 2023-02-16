@@ -69,14 +69,15 @@ if __name__ == "__main__":
     jet_ungroomed_pts = np.array([])
     vector = []
     dataset = []
+
     for file in files:
-
         print("Loading file",file)
-
         with uproot.open(file) as infile:
             tree = infile[intreename]
 
             method = 1
+            choose_model = config['architecture']['choose_model']
+            
             if method==0 :
                 dsids = np.append( dsids, np.array(tree["DSID"].array()) )
                 #eta = ak.concatenate(eta, pad_ak3(tree["Akt10TruthJet_jetEta"].array(), 30),axis=0)
@@ -89,9 +90,7 @@ if __name__ == "__main__":
                 jet_pts = np.append(jet_pts, ak.to_numpy(tree["UFOSD_jetPt"].array()))
                 
                 #Get jet kinematics
-            
-                #        jet_truth_split = np.append(jet_truth_split, tree["Akt10TruthJet_ungroomed_truthJet_Split12"].array(library="np"))
-
+                
                 #Get Lund variables
                 all_lund_zs = np.append(all_lund_zs,tree["UFO_jetLundz"].array(library="np") )
                 all_lund_kts = np.append(all_lund_kts, tree["UFO_jetLundKt"].array(library="np") )
@@ -112,9 +111,23 @@ if __name__ == "__main__":
                 labels = to_categorical(labels, 2)
                 labels = np.reshape(labels[:,1], (len(all_lund_zs), 1))
                 flat_weights = GetPtWeight_2( dsids, jet_pts, filename=config['data']['weights_file'], SF=config['data']['scale_factor'])
-                dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts )
-
+                #dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts , jet_ms)
                 
+                if choose_model=='LundNet_Ntrk_Plus':
+                    Tau21 = tree["UFO_Tau12_wta"].array(library="np")
+                    C2= tree["UFO_C2"].array(library="np")
+                    D2= tree["UFO_D2"].array(library="np")
+                    Angularity= tree["UFO_Angularity"].array(library="np")
+                    FoxWolfram20= tree["UFO_FoxWolfram20"].array(library="np")
+                    KtDR= tree["UFO_KtDR"].array(library="np")
+                    PlanarFlow= tree["UFO_PlanarFlow"].array(library="np")
+                    Split12= tree["Akt10UFOJet_Split12"].array(library="np")
+                    ZCut12= tree["UFO_ZCut12"].array(library="np")
+                    
+                    dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file_PLUS( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts , jet_ms, Tau21, C2, D2, Angularity, FoxWolfram20, KtDR, PlanarFlow, Split12, ZCut12)
+                else:
+                    dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts , jet_ms)
+                    
     if method==0 :
         #Get labels
         labels = ( dsids > 370000 ) & ( NBHadrons == 0 )
@@ -128,8 +141,6 @@ if __name__ == "__main__":
         delta_t_fileax = time.time() - t_start
         print("Opened data in {:.4f} seconds.".format(delta_t_fileax))
         
-        #W bosons
-        # It will take about 30 minutes to finish
         dataset = create_train_dataset_fulld_new(all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels) ## add weights
         #dataset = create_train_dataset_fulld_new(all_lund_zs[s_evt:events], all_lund_kts[s_evt:events], all_lund_drs[s_evt:events], parent1[s_evt:events], parent2[s_evt:events], labels[s_evt:events])
 
@@ -180,14 +191,17 @@ if __name__ == "__main__":
         model = EdgeGinNet()
     if choose_model == "PNANet":
         model = PNANet()
+    if choose_model == "LundNet_Ntrk_Plus":
+        model = LundNet_Ntrk_Plus() 
+
 
     flag = config['retrain']['flag']
     path_to_ckpt = config['retrain']['path_to_ckpt']
 
     if flag==True:
         path = path_to_ckpt
-        #model.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
-        model.load_state_dict(torch.load(path))
+        model.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
+        #model.load_state_dict(torch.load(path))
 
     #device = torch.device('cpu')
     device = torch.device('cuda') # Usually gpu 4 worked best, it had the most memory available

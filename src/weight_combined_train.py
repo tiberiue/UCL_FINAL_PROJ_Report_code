@@ -38,6 +38,7 @@ from tools.GNN_model_weight.models import *
 from tools.GNN_model_weight.utils  import *
 
 
+loss_weights = [0.0005,10]
 
 if __name__ == "__main__":
 
@@ -278,7 +279,7 @@ if __name__ == "__main__":
     for epoch in range(n_epochs_common): # this may need to be bigger
         print("Epoch:{}".format(epoch))
 
-        ad_lt, clsf_lt, total_lt =  train_combined_2(adv_loader, clsf, adv, optimizer_cl, optimizer_adv, device, loss_parameter)
+        ad_lt, clsf_lt, total_lt =  train_combined_2(adv_loader, clsf, adv, optimizer_cl, optimizer_adv, device, loss_parameter,loss_weights)
         train_loss_clsf.append(clsf_lt)
         train_loss_adv.append(ad_lt)
         train_loss_total.append(total_lt)
@@ -293,7 +294,7 @@ if __name__ == "__main__":
         else:
             train_jsdbg.append(0)
 
-        ad_lv, clsf_lv, total_lv =  test_combined(val_loader, clsf, adv, device, loss_parameter) ## loss_parameter is the factor here  loss = loss1 - loss_parameter*loss2
+        ad_lv, clsf_lv, total_lv =  test_combined(val_loader, clsf, adv, device, loss_parameter, loss_weights) ## loss_parameter is the factor here  loss = loss1 - loss_parameter*loss2
         val_loss_adv.append(ad_lv)
         val_loss_clsf.append(clsf_lv)
         val_loss_total.append(total_lv)
