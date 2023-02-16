@@ -36,6 +36,8 @@ import pandas as pd
 from tools.GNN_model_weight.models import *
 from tools.GNN_model_weight.utils  import *
 
+loss_weights = [0.0005,10]
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Train with configurations')
@@ -262,7 +264,7 @@ if __name__ == "__main__":
         train_loss_total.append(total_lt)
         train_acc.append(get_accuracy(adv_loader, clsf, device))
 
-        ad_lv, clsf_lv, total_lv =  test_combined(val_loader, clsf, adv, device, loss_parameter=loss_parameter) ## loss = loss1 - loss_parameter*loss2
+        ad_lv, clsf_lv, total_lv =  test_combined(val_loader, clsf, adv, device, loss_parameter=loss_parameter , loss_weights) ## loss = loss1 - loss_parameter*loss2
         val_loss_adv.append(ad_lv)
         val_loss_clsf.append(clsf_lv)
         val_loss_total.append(total_lv)
