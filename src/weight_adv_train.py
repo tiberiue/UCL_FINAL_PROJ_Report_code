@@ -264,7 +264,7 @@ if __name__ == "__main__":
         train_loss_total.append(total_lt)
         train_acc.append(get_accuracy(adv_loader, clsf, device))
 
-        ad_lv, clsf_lv, total_lv =  test_combined(val_loader, clsf, adv, device, loss_parameter=loss_parameter , loss_weights) ## loss = loss1 - loss_parameter*loss2
+        ad_lv, clsf_lv, total_lv =  test_combined(val_loader, clsf, adv, device, loss_parameter , loss_weights) ## loss = loss1 - loss_parameter*loss2
         val_loss_adv.append(ad_lv)
         val_loss_clsf.append(clsf_lv)
         val_loss_total.append(total_lv)
