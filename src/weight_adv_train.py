@@ -216,8 +216,9 @@ if __name__ == "__main__":
     loss_parameter = config["architecture"]["loss_parameter"]
 
 
-    adv = Adversary(lambda_parameter, num_gaussians)
-
+    #adv = Adversary(lambda_parameter, num_gaussians)
+    adv = Adversary_new(lambda_parameter, num_gaussians)
+    
     #adv_model_weights = "/sps/atlas/k/khandoga/TrainGNN/Models/adv_e003_5.40484.pt"
     #adv.load_state_dict(torch.load(adv_model_weights))
 

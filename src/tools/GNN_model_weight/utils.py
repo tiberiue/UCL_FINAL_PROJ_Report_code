@@ -29,7 +29,7 @@ import math
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 import pandas as pd
-from ..GNN_model_weight.models import mdn_loss
+from ..GNN_model_weight.models import mdn_loss, mdn_loss_new
 
 def GetPtWeight(dsid, pt, filename, SF):
     weights_file = uproot.open(filename)
@@ -273,8 +273,9 @@ def train_adversary_2(loader, clsf, adv, optimizer, device, loss_parameter):
        
         new_pt = torch.reshape(cl_data.pt, (int(list(cl_data.pt.shape)[0]),1) )
         new_mass = torch.reshape(cl_data.mass, (int(list(cl_data.mass.shape)[0]),1))
+        new_pt = torch.log(new_pt)
 
-
+        print(new_pt[:2], " new_pt  " , torch.log(new_pt[:2]) )
         mask_bkg = new_y.lt(0.5)
         optimizer.zero_grad()
         cl_out = clsf(cl_data)
@@ -287,7 +288,7 @@ def train_adversary_2(loader, clsf, adv, optimizer, device, loss_parameter):
         #adv_inp = torch.cat( (torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]),1)) , torch.reshape(cl_data.pt[mask_bkg], (len(cl_data.pt[mask_bkg]),1) )   )  ,1)
 
         pi, sigma, mu = adv(adv_inp)
-
+        '''
         print("---------------------------------------")
         print( torch.reshape(new_pt[mask_bkg], (len(new_pt[mask_bkg]),1) )   )
         print("---------------------------------------")
@@ -298,7 +299,10 @@ def train_adversary_2(loader, clsf, adv, optimizer, device, loss_parameter):
         print("---------------------------------------")
         print(sigma[0])
         print("---------------------------------------")
-        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(new_mass[mask_bkg], (len(new_mass[mask_bkg]),1) ) , new_w[mask_bkg])
+        '''
+        #loss2 = loss_weights[1] * mdn_loss(pi, sigma, mu, torch.reshape(new_mass[mask_bkg], (len(new_mass[mask_bkg]),1) ) , new_w[mask_bkg])
+        loss2 = loss_weights[1] * mdn_loss_new(pi, sigma, mu, torch.reshape(new_mass[mask_bkg], (len(new_mass[mask_bkg]),1) ) , new_w[mask_bkg])
+        
         loss2.backward()
         loss = loss1 + loss_parameter*loss2
         
@@ -340,8 +344,9 @@ def train_combined(loader, clsf, adv, optimizer_cl, optimizer_adv, device, loss_
         pi, sigma, mu = adv(adv_inp)
 
         loss1 = F.binary_cross_entropy(cl_out, new_y, weight = new_w)
-        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w[mask_bkg])
-        
+        #loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w[mask_bkg])
+        loss2 = mdn_loss_new(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w[mask_bkg])
+
         loss = loss_weights[0] * loss1 + loss_weights[1] * loss_parameter*loss2
         
         loss.backward()
@@ -379,7 +384,7 @@ def train_combined_2(loader, clsf, adv, optimizer_cl, optimizer_adv, device, los
 
         new_pt = torch.reshape(cl_data.pt, (int(list(cl_data.pt.shape)[0]),1) )
         new_mass = torch.reshape(cl_data.mass, (int(list(cl_data.mass.shape)[0]),1))
-        
+        new_pt = torch.log(new_pt)
         
         mask_bkg = new_y.lt(0.5)
         optimizer_cl.zero_grad()
@@ -410,7 +415,7 @@ def train_combined_2(loader, clsf, adv, optimizer_cl, optimizer_adv, device, los
 
         loss1 = F.binary_cross_entropy(cl_out, new_y, weight = new_w)
         #loss2 = mdn_loss(pi, sigma, mu, torch.reshape(adv_data.y[mask_bkg], (len(adv_data.y[mask_bkg]), 1)),new_w[mask_bkg])
-        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(new_mass[mask_bkg], (len(new_mass[mask_bkg]),1) ) , new_w[mask_bkg])
+        loss2 = mdn_loss_new(pi, sigma, mu, torch.reshape(new_mass[mask_bkg], (len(new_mass[mask_bkg]),1) ) , new_w[mask_bkg])
         
         loss = loss_weights[0] * loss1 + loss_weights[1] * loss_parameter*loss2
         loss.backward()
@@ -443,7 +448,7 @@ def test_combined(loader, clsf, adv, device, loss_parameter, loss_weights ):
 
         new_pt = torch.reshape(cl_data.pt, (int(list(cl_data.pt.shape)[0]),1) )
         new_mass = torch.reshape(cl_data.mass, (int(list(cl_data.mass.shape)[0]),1))
-        
+        new_pt = torch.log(new_pt)
 
         cl_out = cl_out.clamp(0, 1)
         cl_out[cl_out!=cl_out] = 0

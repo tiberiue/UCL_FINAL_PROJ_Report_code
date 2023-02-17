@@ -178,7 +178,6 @@ class LundNet_Ntrk_Plus(torch.nn.Module):
         #self.lin = nn.Linear(256, 1)
 
 
-#dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file_PLUS( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts , jet_ms, Tau21, C2, D2, Angularity, FoxWolfram20, KtDR, PlanarFlow, Split12, ZCut12)            
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
         x1 = self.conv1(x, edge_index)
@@ -200,8 +199,7 @@ class LundNet_Ntrk_Plus(torch.nn.Module):
         PlanarFlow_in = torch.unsqueeze(data.PlanarFlow, 1)
         Split12_in = torch.unsqueeze(data.Split12, 1)
         ZCut12_in = torch.unsqueeze(data.ZCut12, 1)
-
-        #N_tracksin = torch.unsqueeze(N_tracksin, 1)
+        
         x = torch.cat( (x, N_tracksin, Tau21_in, C2_in, D2_in, Angularity_in, FoxWolfram20_in, KtDR_in, PlanarFlow_in, Split12_in, ZCut12_in  ), dim=1)
         x = self.seq2(x)
         x = F.dropout(x, p=0.1)
@@ -592,6 +590,7 @@ class MDN(nn.Module):
         #    nn.Linear(in_features, out_features * num_gaussians),
         #    nn.Sigmoid()
         #)
+
         self.sigma = nn.Linear(in_features, out_features * num_gaussians)
         self.mu = nn.Linear(in_features, out_features * num_gaussians)
 
@@ -603,6 +602,7 @@ class MDN(nn.Module):
         mu = self.mu(minibatch)
         mu = mu.view(-1, self.num_gaussians, self.out_features)
         return pi, sigma, mu
+
 
 def gaussian_probability(sigma, mu, target):
     """Returns the probability of `target` given MoG parameters `sigma` and `mu`.
@@ -624,14 +624,103 @@ def gaussian_probability(sigma, mu, target):
     return torch.prod(ret, 2)
 
 
+
 def mdn_loss(pi, sigma, mu, target, weight):
     """Calculates the error, given the MoG parameters and the target
     The loss is the negative log likelihood of the data given the MoG
     parameters.
     """
+
+    #print("pi->",pi.size() )
+    #print("sigma->",sigma.size() )
+    #print("mu->",mu.size() )
     prob = pi * gaussian_probability(sigma, mu, target)
     nll = -weight*torch.log(torch.sum(prob, dim=1))
     return torch.mean(nll)
+
+
+###################################################################----------------------------------------------------
+class MDN_new(nn.Module):
+    def __init__(self, in_features, out_features, num_gaussians):
+        super(MDN_new, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.num_gaussians = num_gaussians
+        self.bn1 = nn.BatchNorm1d(num_features=in_features)
+        self.pi = nn.Sequential(
+            nn.Linear(in_features, num_gaussians),
+            nn.Softmax(dim=1)
+        )
+        self.sigma = nn.Sequential(
+            nn.Linear(in_features, out_features * num_gaussians),
+            nn.Softplus()
+        )
+
+        self.mu = nn.Sequential(
+            nn.Linear(in_features, out_features * num_gaussians),
+            nn.Sigmoid()
+        )
+    def forward(self, minibatch):
+        minibatch = self.bn1(minibatch)
+        pi = self.pi(minibatch)
+        sigma = torch.exp(self.sigma(minibatch))
+        sigma = sigma.view(-1, self.num_gaussians, self.out_features)
+        mu = self.mu(minibatch)
+        mu = mu.view(-1, self.num_gaussians, self.out_features)
+        return pi, sigma, mu
+
+
+def gaussian_probability_new(sigma, mu, target):
+    target = (target - 40)/( 300 - 40 )
+    target = target.unsqueeze(1).expand_as(sigma)
+    ret = ONEOVERSQRT2PI * torch.exp(-0.5 * ((target - mu) / sigma)**2) / sigma
+    ret = torch.where(ret == 0, ret + 1E-20, ret)
+    return torch.prod(ret, 2)
+
+
+def pi_redefinition(pi,sigma,mu):
+    # redefine pi in order to obtain normalized distributions inside [0,1] interval 
+    # mu = Mean         
+    # sigma = width          
+    t_ones = torch.ones( mu.size() )
+    t_zeros = torch.zeros( mu.size() )
+    z0 = (t_zeros - mu) / sigma
+    z1 = (t_ones - mu) / sigma
+    out_interval = 0.5 * (1. + torch.erf(z1 / np.sqrt(2.)))  - 0.5 * (1. + torch.erf(z0 / np.sqrt(2.)))  # area inside [0,1] 
+    #print("pi size->",pi.size(),"   out_interval size->",out_interval.size() )
+    pi_2 = pi / out_interval.view(pi.size())
+    #print("pi_2[0]",pi_2[0])
+    for i in range (0,len(pi_2) ): # sum all gaussians must be =1 
+        #pi_2[i] = pi_2[i]/torch.sum(pi_2[i])
+        pi_2[i] /= torch.sum(pi_2[i])
+    
+    #print("pi size after:",pi_2.size() )
+    #print(pi_2.size,"  ",pi_2[:2])
+    return pi_2
+    
+def mdn_loss_new(pi, sigma, mu, target, weight):
+    pi_2 = pi_redefinition(pi,sigma,mu)
+    #pi_2 = pi
+    prob = pi_2 * gaussian_probability(sigma, mu, target)
+    nll = -weight*torch.log(torch.sum(prob, dim=1))
+    return torch.mean(nll)
+
+class Adversary_new(nn.Module):
+    def __init__(self, lambda_parameter, num_gaussians):
+        super(Adversary_new, self).__init__()
+        self.gauss = nn.Sequential(
+    nn.Linear(2, 64),
+    nn.ReLU(),
+    MDN_new(64, 1, num_gaussians)
+)
+        self.revgrad = GradientReversal(lambda_parameter)
+        #print("lambda = {}".format(lambda_parameter)) 
+    def forward(self, x):
+        x = self.revgrad(x) # important hyperparameter, the scale,   # tells by how much the classifier is punished
+        x = self.gauss(x)
+        return x
+
+###################################################################----------------------------------------------------
 
 def sample(pi, sigma, mu):
     """Draw samples from a MoG.

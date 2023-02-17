@@ -215,7 +215,9 @@ if __name__ == "__main__":
     print ("Classifier model loaded, loading adversary.")
 
     #adv = Adversary()
-    adv = Adversary(lambda_parameter, num_gaussians)
+    #adv = Adversary(lambda_parameter, num_gaussians)
+    adv = Adversary_new(lambda_parameter, num_gaussians)
+    
     path_to_adv_model_weights = config["adversary"]["path_to_adv_model_weights"]
     adv.load_state_dict(torch.load(path_to_adv_model_weights))
     #adv.load_state_dict(torch.load(path_to_adv_model_weights, map_location=torch.device('cpu')))
