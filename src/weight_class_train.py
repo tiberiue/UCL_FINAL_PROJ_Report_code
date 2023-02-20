@@ -114,14 +114,14 @@ if __name__ == "__main__":
                 #dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts , jet_ms)
                 
                 if choose_model=='LundNet_Ntrk_Plus':
-                    Tau21 = tree["UFO_Tau12_wta"].array(library="np")
-                    C2= tree["UFO_C2"].array(library="np")
+                    Tau21 = tree["UFO_Tau12_wta"].array(library="np") / 10
+                    C2= tree["UFO_C2"].array(library="np") * 10
                     D2= tree["UFO_D2"].array(library="np")
-                    Angularity= tree["UFO_Angularity"].array(library="np")
+                    Angularity= tree["UFO_Angularity"].array(library="np") * 1000
                     FoxWolfram20= tree["UFO_FoxWolfram20"].array(library="np")
                     KtDR= tree["UFO_KtDR"].array(library="np")
                     PlanarFlow= tree["UFO_PlanarFlow"].array(library="np")
-                    Split12= tree["Akt10UFOJet_Split12"].array(library="np")
+                    Split12= tree["Akt10UFOJet_Split12"].array(library="np") / 10000
                     ZCut12= tree["UFO_ZCut12"].array(library="np")
                     
                     dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file_PLUS( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts , jet_ms, Tau21, C2, D2, Angularity, FoxWolfram20, KtDR, PlanarFlow, Split12, ZCut12)

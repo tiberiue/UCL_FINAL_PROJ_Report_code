@@ -36,7 +36,7 @@ import pandas as pd
 from tools.GNN_model_weight.models import *
 from tools.GNN_model_weight.utils  import *
 
-loss_weights = [0.0005,10]
+loss_weights = [1,1]
 
 if __name__ == "__main__":
 
@@ -214,7 +214,7 @@ if __name__ == "__main__":
 
     lambda_parameter = config["architecture"]["lambda_parameter"]
     loss_parameter = config["architecture"]["loss_parameter"]
-
+    
 
     #adv = Adversary(lambda_parameter, num_gaussians)
     adv = Adversary_new(lambda_parameter, num_gaussians)
@@ -259,7 +259,7 @@ if __name__ == "__main__":
     for epoch in range(n_epochs_adv): # this may need to be bigger
      #   my_test(test_loader)
 
-        ad_lt, clsf_lt, total_lt =  train_adversary_2(adv_loader, clsf, adv, optimizer, device, loss_parameter=loss_parameter) ## loss = loss1 - loss_parameter*loss2
+        ad_lt, clsf_lt, total_lt =  train_adversary_2(adv_loader, clsf, adv, optimizer, device, loss_parameter ,loss_weights) ## loss = loss1 - loss_parameter*loss2
         train_loss_adv.append(ad_lt)
         train_loss_clsf.append(clsf_lt)
         train_loss_total.append(total_lt)

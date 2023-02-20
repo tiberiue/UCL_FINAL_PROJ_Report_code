@@ -678,12 +678,15 @@ def gaussian_probability_new(sigma, mu, target):
     return torch.prod(ret, 2)
 
 
-def pi_redefinition(pi,sigma,mu):
+def pi_redefinition(device, pi, sigma, mu):
     # redefine pi in order to obtain normalized distributions inside [0,1] interval 
     # mu = Mean         
     # sigma = width          
     t_ones = torch.ones( mu.size() )
     t_zeros = torch.zeros( mu.size() )
+    t_ones = t_ones.to(device)
+    t_zeros = t_zeros.to(device)
+    
     z0 = (t_zeros - mu) / sigma
     z1 = (t_ones - mu) / sigma
     out_interval = 0.5 * (1. + torch.erf(z1 / np.sqrt(2.)))  - 0.5 * (1. + torch.erf(z0 / np.sqrt(2.)))  # area inside [0,1] 
@@ -698,8 +701,8 @@ def pi_redefinition(pi,sigma,mu):
     #print(pi_2.size,"  ",pi_2[:2])
     return pi_2
     
-def mdn_loss_new(pi, sigma, mu, target, weight):
-    pi_2 = pi_redefinition(pi,sigma,mu)
+def mdn_loss_new(device, pi, sigma, mu, target, weight):
+    pi_2 = pi_redefinition(device, pi, sigma, mu)
     #pi_2 = pi
     prob = pi_2 * gaussian_probability(sigma, mu, target)
     nll = -weight*torch.log(torch.sum(prob, dim=1))
