@@ -170,11 +170,14 @@ class LundNet_Ntrk_Plus(torch.nn.Module):
         self.seq1 = nn.Sequential(nn.Linear(448, 384),
                                 nn.BatchNorm1d(num_features=384),
                                 nn.ReLU())
-        self.seq2 = nn.Sequential(nn.Linear(394, 256),
+        #self.seq2 = nn.Sequential(nn.Linear(394, 256),
+        #                          nn.ReLU())
+        self.seq2 = nn.Sequential(nn.Linear(393, 256),
                                   nn.ReLU())
         self.seq3 = nn.Sequential(nn.Linear(256, 30),                                                                                     
                                   nn.ReLU())                                                                                                                                
         self.lin = nn.Linear(30, 1)                                                                                                              
+        
         #self.lin = nn.Linear(256, 1)
 
 
@@ -200,7 +203,9 @@ class LundNet_Ntrk_Plus(torch.nn.Module):
         Split12_in = torch.unsqueeze(data.Split12, 1)
         ZCut12_in = torch.unsqueeze(data.ZCut12, 1)
         
-        x = torch.cat( (x, N_tracksin, Tau21_in, C2_in, D2_in, Angularity_in, FoxWolfram20_in, KtDR_in, PlanarFlow_in, Split12_in, ZCut12_in  ), dim=1)
+        #x = torch.cat( (x, N_tracksin, Tau21_in, C2_in, D2_in, Angularity_in, FoxWolfram20_in, KtDR_in, PlanarFlow_in, Split12_in, ZCut12_in  ), dim=1)
+        x = torch.cat( (x, N_tracksin, C2_in, D2_in, Angularity_in, FoxWolfram20_in, KtDR_in, PlanarFlow_in, Split12_in, ZCut12_in  ), dim=1)
+        
         x = self.seq2(x)
         x = F.dropout(x, p=0.1)
         x = self.seq3(x)                                     
@@ -704,7 +709,7 @@ def pi_redefinition(device, pi, sigma, mu):
 def mdn_loss_new(device, pi, sigma, mu, target, weight):
     pi_2 = pi_redefinition(device, pi, sigma, mu)
     #pi_2 = pi
-    prob = pi_2 * gaussian_probability(sigma, mu, target)
+    prob = pi_2 * gaussian_probability_new(sigma, mu, target)
     nll = -weight*torch.log(torch.sum(prob, dim=1))
     return torch.mean(nll)
 

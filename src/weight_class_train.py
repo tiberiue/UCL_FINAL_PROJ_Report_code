@@ -114,15 +114,26 @@ if __name__ == "__main__":
                 #dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts , jet_ms)
                 
                 if choose_model=='LundNet_Ntrk_Plus':
-                    Tau21 = tree["UFO_Tau12_wta"].array(library="np") / 10
-                    C2= tree["UFO_C2"].array(library="np") * 10
-                    D2= tree["UFO_D2"].array(library="np")
-                    Angularity= tree["UFO_Angularity"].array(library="np") * 1000
-                    FoxWolfram20= tree["UFO_FoxWolfram20"].array(library="np")
-                    KtDR= tree["UFO_KtDR"].array(library="np")
-                    PlanarFlow= tree["UFO_PlanarFlow"].array(library="np")
-                    Split12= tree["Akt10UFOJet_Split12"].array(library="np") / 10000
-                    ZCut12= tree["UFO_ZCut12"].array(library="np")
+                    Tau21 = tree["UFO_Tau12_wta"].array(library="np")
+                    #Tau21 = np.log( tree["UFO_Tau12_wta"].array(library="np") / 10 )
+                    C2 = tree["UFO_C2"].array(library="np") * 10
+                    D2 = tree["UFO_D2"].array(library="np") 
+                    Angularity = tree["UFO_Angularity"].array(library="np") * 1000
+                    FoxWolfram20 = tree["UFO_FoxWolfram20"].array(library="np")
+                    KtDR = tree["UFO_KtDR"].array(library="np")
+                    PlanarFlow = tree["UFO_PlanarFlow"].array(library="np")
+                    Split12 = tree["Akt10UFOJet_Split12"].array(library="np") / 10000
+                    ZCut12 = tree["UFO_ZCut12"].array(library="np")
+                    
+                    print("----------Tau21", np.amax(Tau21),"  ", np.amin(Tau21) )
+                    print("----------C2",np.amax(C2),"  ", np.amin(C2) )
+                    print("----------D2",np.amax(D2),"  ", np.amin(D2) )
+                    print("----------Angularity",np.amax(Angularity),"  ", np.amin(Angularity) )
+                    print("----------FoxWolfram20",np.amax(FoxWolfram20),"  ", np.amin(FoxWolfram20) )
+                    print("----------KtDR",np.amax(KtDR),"  ", np.amin(KtDR) )
+                    print("----------PlanarFlow",np.amax(PlanarFlow),"  ", np.amin(PlanarFlow) )
+                    print("----------Split12",np.amax(Split12),"  ", np.amin(Split12) )
+                    print("----------ZCut12",np.amax(ZCut12),"  ", np.amin(ZCut12) )
                     
                     dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file_PLUS( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts , jet_ms, Tau21, C2, D2, Angularity, FoxWolfram20, KtDR, PlanarFlow, Split12, ZCut12)
                 else:
@@ -145,9 +156,8 @@ if __name__ == "__main__":
         #dataset = create_train_dataset_fulld_new(all_lund_zs[s_evt:events], all_lund_kts[s_evt:events], all_lund_drs[s_evt:events], parent1[s_evt:events], parent2[s_evt:events], labels[s_evt:events])
 
 
-
-
-
+        
+    
     print("Dataset created!")
     delta_t_fileax = time.time() - t_start
     print("Created dataset in {:.4f} seconds.".format(delta_t_fileax))
@@ -203,8 +213,8 @@ if __name__ == "__main__":
         model.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
         #model.load_state_dict(torch.load(path))
 
-    #device = torch.device('cpu')
-    device = torch.device('cuda') # Usually gpu 4 worked best, it had the most memory available
+    device = torch.device('cpu')
+    #device = torch.device('cuda') # Usually gpu 4 worked best, it had the most memory available
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 

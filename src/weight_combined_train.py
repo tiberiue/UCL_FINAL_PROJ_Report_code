@@ -38,7 +38,7 @@ from tools.GNN_model_weight.models import *
 from tools.GNN_model_weight.utils  import *
 
 
-loss_weights = [0.0005,10]
+loss_weights = [1,1]
 
 if __name__ == "__main__":
 
