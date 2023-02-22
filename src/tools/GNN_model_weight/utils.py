@@ -400,17 +400,18 @@ def train_combined_2(loader, clsf, adv, optimizer_cl, optimizer_adv, device, los
         adv_inp = torch.cat( (torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]),1)) , torch.reshape(new_pt[mask_bkg], (len(new_pt[mask_bkg]),1) ))  ,1)
         pi, sigma, mu = adv(adv_inp)
         
-        print("pi[:2]---------------------------------------")
-        print(pi[:2])
+        #print("pi[:2]---------------------------------------")
+        #print(pi[:2])
         '''
         print("---------------------------------------")
-        print( torch.reshape(new_mass[mask_bkg], (len(new_pt[mask_bkg]),1) )   )
+        #print( torch.reshape(new_mass[mask_bkg], (len(new_pt[mask_bkg]),1) )   )
         print("---------------------------------------")
         print("mu size->", mu.size(), "   pi size->",pi.size() ,"   sigma size->", sigma.size()  )
+        print("mu---------------------------------------")
         print(mu[:2])
-        print("---------------------------------------")
+        print("pi---------------------------------------")
         print(pi[:2])
-        print("---------------------------------------")
+        print("sigma---------------------------------------")
         print(sigma[:2])
         print("---------------------------------------")
         '''

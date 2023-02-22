@@ -171,13 +171,12 @@ class LundNet_Ntrk_Plus(torch.nn.Module):
                                 nn.BatchNorm1d(num_features=384),
                                 nn.ReLU())
         #self.seq2 = nn.Sequential(nn.Linear(394, 256),
-        #                          nn.ReLU())
+        #nn.ReLU())
         self.seq2 = nn.Sequential(nn.Linear(393, 256),
                                   nn.ReLU())
         self.seq3 = nn.Sequential(nn.Linear(256, 30),                                                                                     
                                   nn.ReLU())                                                                                                                                
         self.lin = nn.Linear(30, 1)                                                                                                              
-        
         #self.lin = nn.Linear(256, 1)
 
 
@@ -205,7 +204,7 @@ class LundNet_Ntrk_Plus(torch.nn.Module):
         
         #x = torch.cat( (x, N_tracksin, Tau21_in, C2_in, D2_in, Angularity_in, FoxWolfram20_in, KtDR_in, PlanarFlow_in, Split12_in, ZCut12_in  ), dim=1)
         x = torch.cat( (x, N_tracksin, C2_in, D2_in, Angularity_in, FoxWolfram20_in, KtDR_in, PlanarFlow_in, Split12_in, ZCut12_in  ), dim=1)
-        
+                       
         x = self.seq2(x)
         x = F.dropout(x, p=0.1)
         x = self.seq3(x)                                     
@@ -668,7 +667,8 @@ class MDN_new(nn.Module):
     def forward(self, minibatch):
         minibatch = self.bn1(minibatch)
         pi = self.pi(minibatch)
-        sigma = torch.exp(self.sigma(minibatch))
+        #sigma = torch.exp(self.sigma(minibatch))
+        sigma = self.sigma(minibatch)
         sigma = sigma.view(-1, self.num_gaussians, self.out_features)
         mu = self.mu(minibatch)
         mu = mu.view(-1, self.num_gaussians, self.out_features)
@@ -677,6 +677,7 @@ class MDN_new(nn.Module):
 
 def gaussian_probability_new(sigma, mu, target):
     target = (target - 40)/( 300 - 40 )
+    #print("mass_0to1",target[:2])
     target = target.unsqueeze(1).expand_as(sigma)
     ret = ONEOVERSQRT2PI * torch.exp(-0.5 * ((target - mu) / sigma)**2) / sigma
     ret = torch.where(ret == 0, ret + 1E-20, ret)
@@ -698,17 +699,36 @@ def pi_redefinition(device, pi, sigma, mu):
     #print("pi size->",pi.size(),"   out_interval size->",out_interval.size() )
     pi_2 = pi / out_interval.view(pi.size())
     #print("pi_2[0]",pi_2[0])
+    '''
     for i in range (0,len(pi_2) ): # sum all gaussians must be =1 
         #pi_2[i] = pi_2[i]/torch.sum(pi_2[i])
         pi_2[i] /= torch.sum(pi_2[i])
+    '''
     
     #print("pi size after:",pi_2.size() )
     #print(pi_2.size,"  ",pi_2[:2])
     return pi_2
     
 def mdn_loss_new(device, pi, sigma, mu, target, weight):
+    #print("pi---------------------------------------")
+    #print(pi[:2])
+    
     pi_2 = pi_redefinition(device, pi, sigma, mu)
     #pi_2 = pi
+    '''
+    print("---------------------------------------")
+    print("mass",target[:2])
+    print("---------------------------------------")
+    print("mu size->", mu.size(), "   pi size->",pi.size() ,"   sigma size->", sigma.size()  )
+    print("mu---------------------------------------")
+    print(mu[:2])
+    print("pi_2---------------------------------------")
+    print(pi_2[:2])
+    print("sigma---------------------------------------")
+    print(sigma[:2])
+    print("---------------------------------------")
+    '''
+    
     prob = pi_2 * gaussian_probability_new(sigma, mu, target)
     nll = -weight*torch.log(torch.sum(prob, dim=1))
     return torch.mean(nll)

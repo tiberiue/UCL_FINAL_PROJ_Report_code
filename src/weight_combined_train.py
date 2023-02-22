@@ -209,8 +209,8 @@ if __name__ == "__main__":
     if choose_model == "PNANet":
         clsf = PNANet()
 
-    #clsf.load_state_dict(torch.load(path_to_classifier_ckpt))
-    clsf.load_state_dict(torch.load(path_to_classifier_ckpt, map_location=torch.device('cpu')))
+    clsf.load_state_dict(torch.load(path_to_classifier_ckpt))
+    #clsf.load_state_dict(torch.load(path_to_classifier_ckpt, map_location=torch.device('cpu')))
     
     print ("Classifier model loaded, loading adversary.")
 
@@ -219,14 +219,14 @@ if __name__ == "__main__":
     #adv = Adversary_new(lambda_parameter, num_gaussians)
     
     path_to_adv_model_weights = config["adversary"]["path_to_adv_model_weights"]
-    #adv.load_state_dict(torch.load(path_to_adv_model_weights))
-    adv.load_state_dict(torch.load(path_to_adv_model_weights, map_location=torch.device('cpu')))
+    adv.load_state_dict(torch.load(path_to_adv_model_weights))
+    #adv.load_state_dict(torch.load(path_to_adv_model_weights, map_location=torch.device('cpu')))
     print ("Adversary loaded.")
 
     lr_optimizer = config["combined"]["lr_optimizer"]
 
-    #device = torch.device('cuda') # Usually gpu 4 worked best, it had the most memory available
-    device = torch.device('cpu')
+    device = torch.device('cuda') # Usually gpu 4 worked best, it had the most memory available
+    #device = torch.device('cpu')
     
     clsf.to(device)
     adv.to(device)
