@@ -209,7 +209,7 @@ if __name__ == "__main__":
     
     clsf.load_state_dict(torch.load(path_to_classifier_ckpt))
     #clsf.load_state_dict(torch.load(path_to_classifier_ckpt, map_location=torch.device('cpu')))
-
+    
     print ("Classifier model loaded, training adversary.")
 
     lambda_parameter = config["architecture"]["lambda_parameter"]
@@ -226,7 +226,7 @@ if __name__ == "__main__":
     for param in clsf.parameters():
         param.require_grads = False
 
-        
+    
     device = torch.device('cuda') # Usually gpu 4 worked best, it had the most memory available
     #device = torch.device('cpu')
     

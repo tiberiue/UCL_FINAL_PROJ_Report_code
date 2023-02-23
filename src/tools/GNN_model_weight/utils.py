@@ -275,7 +275,7 @@ def train_adversary_2(loader, clsf, adv, optimizer, device, loss_parameter, loss
         new_mass = torch.reshape(cl_data.mass, (int(list(cl_data.mass.shape)[0]),1))
         new_pt = torch.log(new_pt)
 
-        print(new_pt[:2], " new_pt  " , torch.log(new_pt[:2]) )
+        #print(new_pt[:2], " new_pt  " , torch.log(new_pt[:2]) )
         mask_bkg = new_y.lt(0.5)
         optimizer.zero_grad()
         cl_out = clsf(cl_data)
@@ -288,6 +288,8 @@ def train_adversary_2(loader, clsf, adv, optimizer, device, loss_parameter, loss
         #adv_inp = torch.cat( (torch.reshape(cl_out[mask_bkg], (len(cl_out[mask_bkg]),1)) , torch.reshape(cl_data.pt[mask_bkg], (len(cl_data.pt[mask_bkg]),1) )   )  ,1)
 
         pi, sigma, mu = adv(adv_inp)
+        
+        #print("batch_counter",batch_counter)
         '''
         print("---------------------------------------")
         print( torch.reshape(new_pt[mask_bkg], (len(new_pt[mask_bkg]),1) )   )
@@ -415,7 +417,7 @@ def train_combined_2(loader, clsf, adv, optimizer_cl, optimizer_adv, device, los
         print(sigma[:2])
         print("---------------------------------------")
         '''
-        print(len(loader.dataset))
+        #print(len(loader.dataset))
         
 
         loss1 = F.binary_cross_entropy(cl_out, new_y, weight = new_w)
@@ -466,12 +468,13 @@ def test_combined(loader, clsf, adv, device, loss_parameter, loss_weights ):
         
         pi, sigma, mu = adv(adv_inp)
 
-        loss2 = mdn_loss(pi, sigma, mu, torch.reshape(new_mass[mask_bkg], (len(new_mass[mask_bkg]),1) ) , new_w[mask_bkg])
+        loss2 = mdn_loss_new(device, pi, sigma, mu, torch.reshape(new_mass[mask_bkg], (len(new_mass[mask_bkg]),1) ) , new_w[mask_bkg])
         
         loss = loss_weights[0] * loss1 + loss_weights[1] * loss_parameter*loss2
         loss_clsf += loss_weights[0] * cl_data.num_graphs * loss1.item()
         loss_adv += loss_weights[1] * cl_data.num_graphs * loss2.item()
         loss_all += cl_data.num_graphs * loss.item()
+        print("loss_adv->",loss_adv)
     return loss_adv / len(loader.dataset), loss_clsf / len(loader.dataset), loss_all / len(loader.dataset)
 
 
