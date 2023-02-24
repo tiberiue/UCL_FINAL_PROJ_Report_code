@@ -714,12 +714,13 @@ def mdn_loss_new(device, pi, sigma, mu, target, weight):
     
     ##redefine mu inside interval [-0.3,1.3] ~~ mu*1.6 - 0.3
     mu_shift = 0.3 * torch.ones( mu.size() )
+    mu_shift = mu_shift.to(device)
     mu_2 = 1.6 * mu - mu_shift 
 
     
     #print("---------------------------------------")
     #print("mass",target[:2])
-    '''
+    #'''
     print("---------------------------------------")
     print("mu size->", mu.size(), "   pi size->",pi.size() ,"   sigma size->", sigma.size()  )
     print("mu_2---------------------------------------")
@@ -729,7 +730,7 @@ def mdn_loss_new(device, pi, sigma, mu, target, weight):
     print("sigma---------------------------------------")
     print(sigma[:2])
     print("---------------------------------------")
-    '''
+    #'''
     prob = pi_2 * gaussian_probability_new(sigma, mu_2, target)
     nll = -weight*torch.log(torch.sum(prob, dim=1))
     #nll = weight*torch.log(torch.sum(prob, dim=1))
