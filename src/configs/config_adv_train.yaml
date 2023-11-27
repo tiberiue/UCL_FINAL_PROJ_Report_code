@@ -1,6 +1,6 @@
 data:
   path_to_trainfiles: "/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*_train.root"  # /sps/atlas/k/khandoga/MySamples90/*_train.root /sps/atlas/k/khandoga/MySamplesS40/user.mykhando.27366163._000001.tree.root_train.root
-  path_to_save: "/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/"
+  path_to_save: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/"
 
 architecture:
   batch_size: 2058
@@ -20,4 +20,4 @@ adversary:
   save_adv_every_epoch: True
   adv_model_name: "adv_"
   n_epochs_adv: 20
-  path_to_store: "/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/"
+  path_to_store: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/"
