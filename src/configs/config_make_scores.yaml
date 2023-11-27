@@ -1,7 +1,8 @@
 data:
   path_to_test_file: "/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*test.root"  # /sps/atlas/k/khandoga/MySamplesS50/*test*.root /sps/atlas/k/khandoga/MySamplesS50/user.mykhando.27420846._000001.tree.root_test.root
-  path_to_outdir: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Scores/"
-
+  path_to_outdir: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/"
+# original outputs /afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Scores/
+# and /afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/
 test:
   path_to_combined_ckpt: "/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/combined_class_lambda0.75_lossp0.001_lrr0.001_s50e065_0.25811_comb_.pt"
   output_name: "LundNetScores"
