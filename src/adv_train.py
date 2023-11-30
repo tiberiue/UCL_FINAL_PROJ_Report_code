@@ -195,7 +195,7 @@ if __name__ == "__main__":
         param.require_grads = False
 
 
-    device = torch.device('cuda') # Usually gpu 4 worked best, it had the most memory available
+    device = torch.device('cpu') # Usually gpu 4 worked best, it had the most memory available
     clsf.to(device)
     adv.to(device)
     optimizer = torch.optim.Adam(adv.parameters(), lr=learning_rate)
