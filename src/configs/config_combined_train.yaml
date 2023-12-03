@@ -1,5 +1,5 @@
 data:
-  path_to_trainfiles: "/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*_train.root"  # /sps/atlas/k/khandoga/MySamplesS50/*_train.root
+  path_to_trainfiles: "/eos/user/r/rvinasco/JetTagging/LundNet_data/full_splitings/TEST_20_Signal_and_BKG/user.rvinasco.30617164*" #"/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*_train.root"  # /sps/atlas/k/khandoga/MySamplesS50/*_train.root
 
 architecture:
   batch_size: 2048
@@ -7,11 +7,13 @@ architecture:
   num_gaussians: 20
 
 classifier:
-  path_to_classifier_ckpt: "/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/LundNet_e060_0.24425.pt"
+  path_to_classifier_ckpt: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/LundNet_e060_0.00011.pt"
+  #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/LundNet_e060_0.24425.pt"
   choose_model: LundNet ## LundNet, GATNet, GINNet, EdgeGinNet, PNANet
 
 adversary:
-  path_to_adv_model_weights: "/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/adv_e020_5.17087.pt"
+  path_to_adv_model_weights: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/adv_e020_46.05170.pt"
+  #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/adv_e020_5.17087.pt"
 
 combined:
   lr_ratio: 0.001

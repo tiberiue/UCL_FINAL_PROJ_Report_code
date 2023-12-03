@@ -13,7 +13,8 @@ architecture:
   loss_parameter: 0.1 # parameter that appears in the total loss (total loss = loss1 - loss_parameter*loss2)
 
 classifier:
-  path_to_classifier_ckpt: "/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/LundNet_e060_0.24425.pt"
+  path_to_classifier_ckpt: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/LundNet_e060_0.00011.pt"
+  #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/LundNet_e060_0.24425.pt"
   choose_model: LundNet ## LundNet, GATNet, GINNet, EdgeGinNet, PNANet
 
 adversary:
