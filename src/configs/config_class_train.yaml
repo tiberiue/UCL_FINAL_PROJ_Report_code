@@ -1,6 +1,6 @@
 data:
-  path_to_trainfiles: "/eos/user/r/rvinasco/JetTagging/LundNet_data/full_splitings/TEST_20_Signal_and_BKG/user.rvinasco.30617164*" #"/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*_train.root"  # /sps/atlas/k/khandoga/MySamplesS40/user.mykhando.27366163._000001.tree.root_train.root
-  path_to_save: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/"
+  path_to_trainfiles: "/eos/user/r/rvinasco/JetTagging/LundNet_data/full_splitings/10_Signal_and_BKG/user.rvinasco.30617164*" #"/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*_train.root"  # /sps/atlas/k/khandoga/MySamplesS40/user.mykhando.27366163._000001.tree.root_train.root
+  path_to_save: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/lundnet_class_files/"
   model_name: "LundNet_"
 
 architecture:

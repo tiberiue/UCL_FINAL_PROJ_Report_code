@@ -1,6 +1,6 @@
 data:
-  path_to_trainfiles: "/eos/user/r/rvinasco/JetTagging/LundNet_data/full_splitings/TEST_20_Signal_and_BKG/user.rvinasco.30617164*" #"/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*_train.root"  # /sps/atlas/k/khandoga/MySamples90/*_train.root /sps/atlas/k/khandoga/MySamplesS40/user.mykhando.27366163._000001.tree.root_train.root
-  path_to_save: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/"
+  path_to_trainfiles: "/eos/user/r/rvinasco/JetTagging/LundNet_data/full_splitings/10_Signal_and_BKG/user.rvinasco.30617164*" #"/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*_train.root"  # /sps/atlas/k/khandoga/MySamples90/*_train.root /sps/atlas/k/khandoga/MySamplesS40/user.mykhando.27366163._000001.tree.root_train.root
+  path_to_save: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/adv_files/"
 
 architecture:
   batch_size: 2058
@@ -13,7 +13,7 @@ architecture:
   loss_parameter: 0.1 # parameter that appears in the total loss (total loss = loss1 - loss_parameter*loss2)
 
 classifier:
-  path_to_classifier_ckpt: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/LundNet_e060_0.00011.pt"
+  path_to_classifier_ckpt: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/lundnet_class_files/"
   #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/LundNet_e060_0.24425.pt"
   choose_model: LundNet ## LundNet, GATNet, GINNet, EdgeGinNet, PNANet
 
@@ -21,4 +21,4 @@ adversary:
   save_adv_every_epoch: True
   adv_model_name: "adv_"
   n_epochs_adv: 20
-  path_to_store: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/"
+  path_to_store: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/adv_files"

@@ -194,7 +194,7 @@ if __name__ == "__main__":
 
     lr_optimizer = config["combined"]["lr_optimizer"]
 
-    device = torch.device('cpu') # Usually gpu 4 worked best, it had the most memory available
+    device = torch.device('cuda') # Usually gpu 4 worked best, it had the most memory available
     clsf.to(device)
     adv.to(device)
     optimizer_cl = torch.optim.Adam(clsf.parameters(), lr=lr_optimizer)

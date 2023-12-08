@@ -167,7 +167,7 @@ if __name__ == "__main__":
 
         model.load_state_dict(torch.load(path_to_combined_ckpt))
 
-        device = torch.device('cpu') # Usually gpu 4 worked best, it had the most memory available
+        device = torch.device('cuda') # Usually gpu 4 worked best, it had the most memory available
         model.to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
