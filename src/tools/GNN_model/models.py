@@ -412,17 +412,17 @@ class MDN(nn.Module):
             nn.Linear(in_features, num_gaussians),
             nn.Softmax(dim=1)
         )
-        #self.sigma = nn.Sequential(
-        #    nn.Linear(in_features, out_features * num_gaussians),
-        #    nn.Softplus()
-        #)
+        self.sigma = nn.Sequential(
+            nn.Linear(in_features, out_features * num_gaussians),
+            nn.Softplus()
+        )
 
-        #self.mu = nn.Sequential(
-        #    nn.Linear(in_features, out_features * num_gaussians),
-        #    nn.Sigmoid()
-        #)
-        self.sigma = nn.Linear(in_features, out_features * num_gaussians)
-        self.mu = nn.Linear(in_features, out_features * num_gaussians)
+        self.mu = nn.Sequential(
+            nn.Linear(in_features, out_features * num_gaussians),
+            nn.Sigmoid()
+        )
+        #self.sigma = nn.Linear(in_features, out_features * num_gaussians)
+        #self.mu = nn.Linear(in_features, out_features * num_gaussians)
 
     def forward(self, minibatch):
         minibatch = self.bn1(minibatch)

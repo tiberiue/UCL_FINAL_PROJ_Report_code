@@ -213,8 +213,8 @@ if __name__ == "__main__":
         model.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
         #model.load_state_dict(torch.load(path))
 
-    device = torch.device('cpu')
-    #device = torch.device('cuda') # Usually gpu 4 worked best, it had the most memory available
+    #device = torch.device('cpu')
+    device = torch.device('cuda') # Usually gpu 4 worked best, it had the most memory available
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 

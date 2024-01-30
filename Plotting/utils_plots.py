@@ -142,10 +142,10 @@ def make_rocs(taggers):
     #c1.ylim(0, 1.2)
 
     c1.text(["#sqrt{s} = 13 TeV, #it{W} tagging",
-            "anti-k_{t} R=1.0 UFO jets",
+            "anti-k_{t} R=1.0 UFO jets", 'AUC:'+str(auc), 
             ], qualifier='Simulation Internal')
     c1.legend()
-    c1.save("ROCcurves.png")
+    c1.save("/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Graphs/ROCcurves.png")
 
 
 
@@ -199,7 +199,7 @@ def make_efficiencies_3var(taggers):
             ], qualifier='Simulation Internal')
     c1.log()
     c1.legend()
-    c1.save("Efficiencies_3var_taggers.png")
+    c1.save("/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Graphs/Efficiencies_3var_taggers.png")
 
 
 def make_efficiencies(taggers):
@@ -286,7 +286,7 @@ def get_wp_th1(tagger,wp):
     c = TCanvas("", "", 500, 500)
     c.SetRightMargin(0.2)
     h_pt_nn.Draw("colz")
-    c.SaveAs("pt_vs_score.png")
+    c.SaveAs("/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Graphs/pt_vs_score.png")
 
     pts, scores = get_eff_score(h_pt_nn,wp)
     print(len(pts))
@@ -491,7 +491,7 @@ def scores_separation(tagger):
             ], qualifier='Simulation Internal')
     c1.log()
     c1.legend()
-    c1.save("classification_{}.png".format(tagger.name))
+    c1.save("/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Graphs/classification_{}.png".format(tagger.name))
 
 def scores_separation_pt(tagger, minpt, maxpt):
 
@@ -515,7 +515,7 @@ def scores_separation_pt(tagger, minpt, maxpt):
             ], qualifier='Simulation Internal')
     c1.log()
     c1.legend()
-    c1.save("classification_{}_pt_{}_{}.png".format(tagger.name,minpt,maxpt))
+    c1.save("/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Graphs/classification_{}_pt_{}_{}.png".format(tagger.name,minpt,maxpt))
 
 def make_efficiencies_pt(taggers, minpt, maxpt,weight="chris_weight"):
     #plt.figure(figsize=(16,12))
@@ -571,7 +571,7 @@ def make_efficiencies_pt(taggers, minpt, maxpt,weight="chris_weight"):
             ], qualifier='Simulation Internal')
     c1.log()
     c1.legend()
-    c1.save("Efficiencies_3var_taggers_{}_{}.png".format(minpt, maxpt))
+    c1.save("/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Graphs/Efficiencies_3var_taggers_{}_{}.png".format(minpt, maxpt))
 
 
 def mass_sculpting(tagger,weight="chris_weight"):
@@ -603,7 +603,7 @@ def mass_sculpting(tagger,weight="chris_weight"):
             ], qualifier='Simulation Internal')
     c1.log()
     c1.legend()
-    c1.save("mass_sculpting.png")
+    c1.save("/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Graphs/mass_sculpting.png")
 
 
 def mass_sculpting_ptcut(tagger,minpt,maxpt,weight="chris_weight"):
@@ -638,7 +638,7 @@ def mass_sculpting_ptcut(tagger,minpt,maxpt,weight="chris_weight"):
     c1.log()
     c1.legend()
     #c1.ylim(0, hTotalBG.GetMaximum())
-    c1.save("mass_sculpting_{}_{}.png".format(minpt, maxpt))
+    c1.save("/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Graphs/mass_sculpting_{}_{}.png".format(minpt, maxpt))
 
 def mass_bgrej(taggers,weight="chris_weight"):
     plt.figure(figsize=[16,12])
@@ -671,7 +671,7 @@ def mass_bgrej(taggers,weight="chris_weight"):
     #plt.ylim(10**(-16), 10**(-0))
     plt.legend()
     plt.legend(prop={'size': 15})
-    plt.savefig("mass_bgrej.png",dpi=500)
+    plt.savefig("/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Graphs/mass_bgrej.png",dpi=500)
 
     #plt.gca().invert_yaxis()
     plt.show()
@@ -708,7 +708,7 @@ def mass_sigeff(taggers,weight="chris_weight"):
     plt.ylim(10**(-16), 10**(-0))
     plt.legend()
     plt.legend(prop={'size': 15})
-    plt.savefig("mass_sigeff.png",dpi=500)
+    plt.savefig("/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Graphs/mass_sigeff.png",dpi=500)
     #plt.gca().invert_yaxis()
     plt.show()
 
@@ -755,7 +755,7 @@ def pt_spectrum(taggers,weight="chris_weight"):
     # -- Log
     c.log()
     c.legend()
-    c.save("ptspectrum.png")
+    c.save("/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Graphs/ptspectrum.png")
 
 
 def pt_bgrej(taggers,weight="chris_weight"):
@@ -786,7 +786,7 @@ def pt_bgrej(taggers,weight="chris_weight"):
     c.log()
     c.legend()
     c.ylim(1e1, 1e5)
-    c.save("pt_bgrej.png")
+    c.save("/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Graphs/pt_bgrej.png")
 
 
 

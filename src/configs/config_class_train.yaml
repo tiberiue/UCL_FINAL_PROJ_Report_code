@@ -1,17 +1,19 @@
 data:
-  path_to_trainfiles: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Trainingfile/user.teris.1._000001.tree.root_train.root"
+  path_to_trainfiles: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Trainingfile/user.teris.10.1.tree.root_train.root"
+  #"/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Trainingfile/user.teris.10.1.tree.root_train.root"
   #"/eos/user/r/rvinasco/JetTagging/LundNet_data/full_splitings/5_Signal_and_BKG/*._000001.tree.root_train.root" #"/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*_train.root"  # /sps/atlas/k/khandoga/MySamplesS40/user.mykhando.27366163._000001.tree.root_train.root
   path_to_save: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/lundnet/"
-  model_name: "LundNet_"
+  model_name: "LundNet_3"
 
 architecture:
-  batch_size: 2048
+  batch_size: 4096
   test_size: 0.2
-  n_epochs: 60
+  n_epochs: 20
   learning_rate: 0.0005
   choose_model: LundNet ## LundNet, GATNet, GINNet, EdgeGinNet, PNANet
   save_every_epoch: True
 
 retrain:
-  flag: False
-  path_to_ckpt: "/sps/atlas/k/khandoga/TrainGNN/Models/LundNet_ufob_e012_0.12481.pt"
+  flag: True
+  path_to_ckpt: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/lundnet/LundNet_2e010_0.05577.pt"
+  #"/sps/atlas/k/khandoga/TrainGNN/Models/LundNet_ufob_e012_0.12481.pt"
