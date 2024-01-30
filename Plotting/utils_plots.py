@@ -368,7 +368,7 @@ class tagger_scores():
         self.bg_untagged = self.bg[self.bg.fjet_nnscore < working_point]
 
         print (self.name)
-
+        print(self.signal)
         print ("signal ratio:",len(self.signal_tagged.values)/len(self.signal.values))
         print ("bg ratio:",        len(self.bg_tagged.values)/len(self.bg.values))
 

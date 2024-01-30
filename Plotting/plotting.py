@@ -24,6 +24,7 @@ from utils_plots import weights
 from utils_plots import trivar_scores
 from utils_plots import getANNROCresults
 from utils_plots import JSD
+import glob
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -39,7 +40,8 @@ taggers = {}
 tagger_files = {}
 #tagger_files["LundNet_class"] = "/Users/mykola/Physics/LundTagger/LScores/scores_newclass.root"
 #tagger_files["LundNet_adv059"] = "/Users/mykola/Physics/LundTagger/LScores/scores_adv_0.59639.root"
-tagger_files["LundNet_class"] = "/eos/home-m/mykhando/public/scores_LundNet_class.root"
+tagger_files["LundNet_class"] = "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/score/user.teris.1._000001.tree.root_test.root_score_LundNetScores.root"
+#tagger_files["LundNet_class"] = "/eos/home-m/mykhando/public/scores_LundNet_class.root"
 #tagger_files["LundNet_class"] = "/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Scores/LundNet_lr0.0005_nepochs60/tree.root"
 #tagger_files["LundNet_class"] = "/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Scores/user.mykhando.27420846._000001.tree.root_test.root_score_LundNetScores.root "
 #tagger_files["3var"] = "/eos/user/m/mykhando/public/scores_3var.root"
