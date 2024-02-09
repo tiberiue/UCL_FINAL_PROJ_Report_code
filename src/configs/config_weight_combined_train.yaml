@@ -1,5 +1,5 @@
 data:
-  path_to_trainfiles: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Trainingfile/user.teris.1._000001.tree.root_train.root"
+  path_to_trainfiles: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Trainingfile/user.teris.10.1.tree.root_train.root"
   #"/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*_train.root"  # /sps/atlas/k/khandoga/MySamplesS50/*_train.root
   weights_file: "/afs/cern.ch/user/t/teris/ljptagger/flat_weights_tr.root"
   #"/afs/cern.ch/work/j/jzahredd/LJPTagger/ljptagger/final/flat_weights_tr.root"
@@ -11,20 +11,20 @@ architecture:
   num_gaussians: 20
 
 classifier:
-  path_to_classifier_ckpt: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightlund/LundNet_weighted_e057_0.06052.pt"
+  path_to_classifier_ckpt: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightcomb/combined_weighted_class_lambda20_lossp0.05_lrr4_s50e179_3.11277_comb_.pt"
   #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/LundNet_weighted_e060_0.27473.pt"
   choose_model: LundNet ## LundNet, GATNet, GINNet, EdgeGinNet, PNANet
 
 adversary:
-  path_to_adv_model_weights: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightadv/adv_weighted_e018_-0.50932.pt"
+  path_to_adv_model_weights: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightcomb/combined_weighted_adv_class_lambda20_lossp0.05_lrr4e179_-0.42931_comb_.pt"
   #/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/adv_weighted_e020_8.60403.pt"
 
 combined:
-  lr_ratio: 0.001
-  lambda_parameter: 0.75
-  loss_parameter: 0.001
+  lr_ratio: 4
+  lambda_parameter: 20
+  loss_parameter: 0.05
   lr_optimizer: 0.0005
-  n_epochs_common: 200
+  n_epochs_common: 21
   save_every_epoch: True
   path_to_save_combined: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightcomb/"
   #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/"

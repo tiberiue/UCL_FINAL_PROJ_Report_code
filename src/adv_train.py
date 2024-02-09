@@ -120,6 +120,7 @@ if __name__ == "__main__":
     labels = np.reshape(labels[:,1], (len(all_lund_zs), 1))
 
     #W bosons
+    #dataset = create_train_dataset_fulld(all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, labels)
     dataset = create_train_dataset_fulld_new(all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, labels)
     #train_loader = DataLoader(dataset, batch_size=1024, shuffle=True)
     delta_t_fileax = time.time() - t_start
