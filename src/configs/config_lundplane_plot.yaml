@@ -1,0 +1,8 @@
+data:
+  path_to_files: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/lunplane_plots/backgroundtrain.root"
+  #"/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*_train.root"  # /sps/atlas/k/khandoga/MySamplesS40/user.mykhando.27366163._000001.tree.root_train.root
+  path_to_save: "/afs/cern.ch/user/t/teris/ljptagger/Plotting"
+  #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/"
+  weights_file: "/afs/cern.ch/user/t/teris/ljptagger/flat_weights_tr.root"
+  #"/afs/cern.ch/work/j/jzahredd/LJPTagger/ljptagger/final/flat_weights_tr.root"
+  scale_factor: 14.475606

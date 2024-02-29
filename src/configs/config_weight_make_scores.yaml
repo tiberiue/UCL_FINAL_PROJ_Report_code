@@ -8,9 +8,9 @@ data:
   scale_factor: 14.475606
 
 test:
-  path_to_combined_ckpt: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightcomb/combined_weighted_class_lambda20_lossp0.05_lrr4_s50e021_0.39524_comb_.pt"
+  path_to_combined_ckpt: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightcomb/combined_weighted_class_lambda30_lossp0.05_lrr1_s50e163_0.23220_comb_.pt"
   #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/combined_weighted_class_lambda0.75_lossp0.001_lrr0.001_s50e048_0.44991_comb_.pt"
-  output_name: "LundNetWeightedScores"
+  output_name: "LundNetWeightedScoresalt"
   choose_model: LundNet
   learning_rate: 0.0005
   batch_size: 2048

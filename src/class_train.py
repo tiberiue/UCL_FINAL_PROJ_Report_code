@@ -92,6 +92,9 @@ if __name__ == "__main__":
             all_lund_zs = np.append(all_lund_zs,tree["UFO_jetLundz"].array(library="np") )
             all_lund_kts = np.append(all_lund_kts, tree["UFO_jetLundKt"].array(library="np") )
             all_lund_drs = np.append(all_lund_drs, tree["UFO_jetLundDeltaR"].array(library="np") )
+            print(all_lund_drs,"dr shape")
+            print(all_lund_kts,"kts shape")
+            print(all_lund_zs,"zs shape")
 
 
 

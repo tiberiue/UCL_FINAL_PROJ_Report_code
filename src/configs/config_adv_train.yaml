@@ -22,6 +22,6 @@ classifier:
 
 adversary:
   save_adv_every_epoch: True
-  adv_model_name: "adv_20"
+  adv_model_name: "adv_30"
   n_epochs_adv: 20
   path_to_store: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/adv/"

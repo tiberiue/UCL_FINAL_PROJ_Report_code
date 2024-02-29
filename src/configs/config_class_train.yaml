@@ -1,5 +1,6 @@
 data:
-  path_to_trainfiles: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Trainingfile/user.teris.10.1.tree.root_train.root"
+  path_to_trainfiles: /eos/user/r/rvinasco/JetTagging/LundNet_data/full_splitings/10_Signal_and_BKG/user.rvinasco.30617159._000001.tree.root_train.root 
+  #"/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Trainingfile/user.teris.10.1.tree.root_train.root"
   #"/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Trainingfile/user.teris.10.1.tree.root_train.root"
   #"/eos/user/r/rvinasco/JetTagging/LundNet_data/full_splitings/5_Signal_and_BKG/*._000001.tree.root_train.root" #"/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*_train.root"  # /sps/atlas/k/khandoga/MySamplesS40/user.mykhando.27366163._000001.tree.root_train.root
   path_to_save: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/lundnet/"
