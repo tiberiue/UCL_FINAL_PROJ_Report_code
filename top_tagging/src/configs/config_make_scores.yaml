@@ -1,0 +1,15 @@
+data:
+  path_to_test_file: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Testfile/user.teris.10.1.tree.root_test.root"
+  #"/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Testfile/user.teris.1._000001.tree.root_test.root"
+  #"/eos/user/r/rvinasco/JetTagging/LundNet_data/full_splitings/TEST_5_Signal_and_BKG/user.rvinasco.*._000001.tree.root_test.root" #"/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*test.root"  # /sps/atlas/k/khandoga/MySamplesS50/*test*.root /sps/atlas/k/khandoga/MySamplesS50/user.mykhando.27420846._000001.tree.root_test.root
+  path_to_outdir: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/score/"
+# original outputs /afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Scores/
+# and /afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/
+test:
+  path_to_combined_ckpt: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/combined/combined_class_lambda30_lossp0.05_lrr4_s50e050_-2.22435_comb_.pt"
+  #"/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/combined/combined_class_lambda40_lossp0.1_lrr4_s50e150_-4.52687_comb_.pt"
+  #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/combined_class_lambda0.75_lossp0.001_lrr0.001_s50e065_0.25811_comb_.pt"
+  output_name: "LundNetScorescustom2030"
+  choose_model: LundNet
+  learning_rate: 0.0005
+  batch_size: 2048

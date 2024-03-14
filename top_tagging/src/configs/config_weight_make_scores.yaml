@@ -1,0 +1,16 @@
+data:
+  path_to_test_file: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Testfile/user.teris.small.zprime*.tree.root_test.root"
+  #"/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*test.root"  # /sps/atlas/k/khandoga/MySamplesS50/*test*.root /sps/atlas/k/khandoga/MySamplesS50/user.mykhando.27420846._000001.tree.root_test.root
+  path_to_outdir: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightscoreZ/"
+  #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Scores/"
+  weights_file: /eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Trainingfile/flatweightsz.root
+  #"/afs/cern.ch/work/j/jzahredd/LJPTagger/ljptagger/final/flat_weights_tr.root"
+  scale_factor: 14.475606
+
+test:
+  path_to_combined_ckpt: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightlundZ/LundNet_weighted_Z_properbackg_e060_4115.52310.pt"
+  #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/combined_weighted_class_lambda0.75_lossp0.001_lrr0.001_s50e048_0.44991_comb_.pt"
+  output_name: "LundNetZscoretest1"
+  choose_model: LundNet
+  learning_rate: 0.00005
+  batch_size: 2048
