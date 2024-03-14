@@ -1,16 +1,16 @@
 data:
-  path_to_test_file: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Testfile/user.teris.10.1.tree.root_test.root"
+  path_to_test_file: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/OtherMC/Sherpalund/user.teris.sherpalundqcd.pythiasignal.root"  #"/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Trainingfile/user.teris.10.1.tree.root_train.root" 
   #"/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*test.root"  # /sps/atlas/k/khandoga/MySamplesS50/*test*.root /sps/atlas/k/khandoga/MySamplesS50/user.mykhando.27420846._000001.tree.root_test.root
-  path_to_outdir: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightscore/"
+  path_to_outdir: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightscoremixedMC/"
   #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Scores/"
-  weights_file: /afs/cern.ch/user/t/teris/ljptagger/flat_weights_tr.root
+  weights_file: "/afs/cern.ch/user/t/teris/ljptagger/flat_weights.root"
   #"/afs/cern.ch/work/j/jzahredd/LJPTagger/ljptagger/final/flat_weights_tr.root"
   scale_factor: 14.475606
 
 test:
-  path_to_combined_ckpt: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightcomb/combined_weighted_class_lambda30_lossp0.05_lrr1_s50e163_0.23220_comb_.pt"
+  path_to_combined_ckpt: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightcombZ/combined_weighted_class_lambda30_lossp0.05_truefinal_lrr4_s50e023_0.42802_comb_.pt"
   #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/combined_weighted_class_lambda0.75_lossp0.001_lrr0.001_s50e048_0.44991_comb_.pt"
-  output_name: "LundNetWeightedScoresalt"
+  output_name: "LundNetMCtestpythiasignal"
   choose_model: LundNet
   learning_rate: 0.0005
   batch_size: 2048

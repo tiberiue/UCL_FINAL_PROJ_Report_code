@@ -74,38 +74,41 @@ if __name__ == "__main__":
 
         with uproot.open(file) as infile:
             tree = infile[intreename]
-            dsids = np.append( dsids, np.array(tree["DSID"].array()) )
+            #dsids = np.append( dsids, np.array(tree["DSID"].array()) )
+            dsids = np.array(tree["DSID"].array())
             #eta = ak.concatenate(eta, pad_ak3(tree["Akt10TruthJet_jetEta"].array(), 30),axis=0)
-            mcweights = tree["mcWeight"].array()
-            NBHadrons = np.append( NBHadrons, ak.to_numpy(tree["Akt10UFOJet_GhostBHadronsFinalCount"].array()))
-
-            parent1 = np.append(parent1, tree["UFO_edge1"].array(library="np"),axis=0)
-            parent2 = np.append(parent2, tree["UFO_edge2"].array(library="np"),axis=0)
-            jet_ms = np.append(jet_ms, ak.to_numpy(tree["UFOSD_jetM"].array()))
-            jet_pts = np.append(jet_pts, ak.to_numpy(tree["UFOSD_jetPt"].array()))
+            #mcweights = tree["mcWeight"].array()
+            #NBHadrons = np.append( NBHadrons, ak.to_numpy(tree["Akt10UFOJet_GhostBHadronsFinalCount"].array()))
+            NBHadrons = ak.to_numpy(tree["Akt10UFOJet_GhostBHadronsFinalCount"].array())
+            #parent1 = np.append(parent1, tree["UFO_edge1"].array(library="np"),axis=0)
+            #parent2 = np.append(parent2, tree["UFO_edge2"].array(library="np"),axis=0)
+            #jet_ms = np.append(jet_ms, ak.to_numpy(tree["UFOSD_jetM"].array()))
+            #jet_pts = np.append(jet_pts, ak.to_numpy(tree["UFOSD_jetPt"].array()))
 
             #Get jet kinematics
 
     #        jet_truth_split = np.append(jet_truth_split, tree["Akt10TruthJet_ungroomed_truthJet_Split12"].array(library="np"))
 
             #Get Lund variables
-            all_lund_zs = np.append(all_lund_zs,tree["UFO_jetLundz"].array(library="np") )
-            all_lund_kts = np.append(all_lund_kts, tree["UFO_jetLundKt"].array(library="np") )
-            all_lund_drs = np.append(all_lund_drs, tree["UFO_jetLundDeltaR"].array(library="np") )
-            print(all_lund_drs,"dr shape")
-            print(all_lund_kts,"kts shape")
-            print(all_lund_zs,"zs shape")
+            
+            #all_lund_zs = np.append(all_lund_zs,tree["UFO_jetLundz"].array(library="np") )
+            all_lund_zs = tree["UFO_jetLundz"].array(library="np")
+            #all_lund_kts = np.append(all_lund_kts, tree["UFO_jetLundKt"].array(library="np") )
+            #all_lund_drs = np.append(all_lund_drs, tree["UFO_jetLundDeltaR"].array(library="np") )
+            #print(all_lund_drs,"dr shape")
+            #print(all_lund_kts,"kts shape")
+            #print(all_lund_zs,"zs shape")
 
 
 
-    #Get labels
-    labels = ( dsids > 370000 ) & ( NBHadrons == 0 )
+            #Get labels
+            labels = ( dsids > 370000 ) & ( NBHadrons == 0 )
 
-    #print(labels)
-    labels = to_categorical(labels, 2)
-    labels = np.reshape(labels[:,1], (len(all_lund_zs), 1))
+            #print(labels)
+            labels = to_categorical(labels, 2)
+            labels = np.reshape(labels[:,1], (len(all_lund_zs), 1))
 
-    print (int(labels.sum()),"labeled as signal out of", len(labels), "total events")
+            print (int(labels.sum()),"labeled as signal out of", len(labels), "total events")
 
 
     delta_t_fileax = time.time() - t_start

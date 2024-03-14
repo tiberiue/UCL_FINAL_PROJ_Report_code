@@ -1,9 +1,9 @@
 data:
-  path_to_trainfiles: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Trainingfile/user.teris.10.1.tree.root_train.root"
+  path_to_trainfiles: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Trainingfile/user.teris.mixedMC.root"
   #"/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*_train.root"  # /sps/atlas/k/khandoga/MySamples90/*_train.root /sps/atlas/k/khandoga/MySamplesS40/user.mykhando.27366163._000001.tree.root_train.root
-  path_to_save: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightadv/"
+  path_to_save: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightadvmixedMC/"
   #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/"
-  weights_file: "/afs/cern.ch/user/t/teris/ljptagger/flat_weights_tr.root"
+  weights_file: "/afs/cern.ch/user/t/teris/ljptagger/flat_weights.root"
   #"/afs/cern.ch/work/j/jzahredd/LJPTagger/ljptagger/final/flat_weights_tr.root"
   scale_factor: 14.475606
 
@@ -14,17 +14,17 @@ architecture:
   learning_rate: 0.002
   save_every_epoch: True
   num_gaussians: 20
-  lambda_parameter: 30 # for the adversarial architecture
-  loss_parameter: 0.033 # parameter that appears in the total loss (total loss = loss1 - loss_parameter*loss2)
+  lambda_parameter: 20 # for the adversarial architecture
+  loss_parameter: 0.05 # parameter that appears in the total loss (total loss = loss1 - loss_parameter*loss2)
 
 classifier:
-  path_to_classifier_ckpt: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightlund/LundNet_weighted_e007_0.06392.pt"
+  path_to_classifier_ckpt: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightlundmixedMC/LundNet_weighted_MixedMC_2e019_0.24019.pt"
   #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/LundNet_weighted_e060_0.27473.pt"
   choose_model: LundNet ## LundNet, GATNet, GINNet, EdgeGinNet, PNANet
 
 adversary:
   save_adv_every_epoch: True
-  adv_model_name: "adv_weighted_30"
+  adv_model_name: "adv_weighted_20_mixed"
   n_epochs_adv: 20
-  path_to_store: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightadv/"
+  path_to_store: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightadvmixedMC"
   #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/"

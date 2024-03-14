@@ -60,6 +60,8 @@ if __name__ == "__main__":
 
     jet_pts = np.array([])
     jet_ms = np.array([])
+    jet_eta = np.array([])
+    jet_phi = np.array([])
     eta = np.array([])
     jet_truth_pts = np.array([])
     jet_truth_etas = np.array([])
@@ -107,12 +109,49 @@ if __name__ == "__main__":
                 all_lund_drs = tree["UFO_jetLundDeltaR"].array(library="np")
                 N_tracks = tree["UFO_Ntrk"].array(library="np")
                 jet_pts = tree["UFOSD_jetPt"].array(library="np")
+                jet_eta = tree["UFOSD_jetEta"].array(library="np")
+                jet_phi = tree["UFOSD_jetPhi"].array(library="np")
+
+                #print(all_lund_drs.shape ,"drs array size and amount of jets in total")
+                #print(jet_pts[NBHadrons < 1 ].shape)
+                
+                #if dsids[0]>370000:
+                    
+                    #dsids = np.delete(dsids,np.argwhere(NBHadrons < 1))
+                    #print(dsids.shape)
+                    #parent1 = np.delete(parent1,np.argwhere(NBHadrons < 1),axis = 0)
+                    #print(parent1.shape)
+                    #parent2 = np.delete(parent2,np.argwhere(NBHadrons < 1),axis = 0)
+                    #print(parent2.shape)
+                    #jet_ms = np.delete(jet_ms,np.argwhere(NBHadrons < 1),axis = 0)
+                    #print(jet_ms.shape)
+                    #N_tracks = np.delete(N_tracks,np.argwhere(NBHadrons < 1),axis = 0)
+                    #print(N_tracks.shape)
+                    #jet_pts = np.delete(jet_pts,np.argwhere(NBHadrons < 1),axis = 0)
+                    #print(jet_pts.shape)
+                    #jet_eta = np.delete(jet_eta,np.argwhere(NBHadrons < 1),axis = 0)
+                    #jet_phi = np.delete(jet_phi,np.argwhere(NBHadrons < 1),axis = 0)
+                    #all_lund_zs  = np.delete(all_lund_zs,np.argwhere(NBHadrons < 1),axis = 0)
+                    #print(all_lund_zs.shape)
+                    #all_lund_kts = np.delete(all_lund_kts,np.argwhere(NBHadrons < 1),axis = 0)
+                    #all_lund_drs = np.delete(all_lund_drs,np.argwhere(NBHadrons < 1),axis = 0)
+                    #NBHadrons = np.delete(NBHadrons,np.argwhere(NBHadrons < 1))
+                    #print(NBHadrons.shape)
+                #W boson labeling
                 labels = ( dsids > 370000 ) & ( NBHadrons == 0 )
+                #Z prime boson labeling
+                #labels = ( dsids > 370000 ) & ( NBHadrons >= 1 )
+        
                 labels = to_categorical(labels, 2)
                 labels = np.reshape(labels[:,1], (len(all_lund_zs), 1))
-                flat_weights = GetPtWeight_2( dsids, jet_pts, filename=config['data']['weights_file'], SF=config['data']['scale_factor'])
+
+                print (int(labels.sum()),"labeled as signal out of", len(labels), "total events")
+                #using weight file
+                #flat_weights = GetPtWeight_2( dsids, jet_pts, filename=config['data']['weights_file'], SF=config['data']['scale_factor'])
+                #using utils weight measuring
+                flat_weights = GetPtWeight_2( dsids, jet_pts, filename=config['data']['weights_file'],SF=config['data']['scale_factor'])
                 #dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts , jet_ms)
-                
+                print("Flat weights collected")
                 if choose_model=='LundNet_Ntrk_Plus':
                     Tau21 = tree["UFO_Tau12_wta"].array(library="np")
                     #Tau21 = np.log( tree["UFO_Tau12_wta"].array(library="np") / 10 )
@@ -138,6 +177,7 @@ if __name__ == "__main__":
                     dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file_PLUS( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts , jet_ms, Tau21, C2, D2, Angularity, FoxWolfram20, KtDR, PlanarFlow, Split12, ZCut12)
                 else:
                     dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts , jet_ms)
+                    #gc.collect()
                     
     if method==0 :
         #Get labels
@@ -179,12 +219,12 @@ if __name__ == "__main__":
     print ("train dataset size:", len(train_ds))
     print ("validation dataset size:", len(validation_ds))
     
-    '''
+    
     deg = torch.zeros(10, dtype=torch.long)
     for data in dataset:
         d = degree(data.edge_index[1], num_nodes=data.num_nodes, dtype=torch.long)
         deg += torch.bincount(d, minlength=deg.numel())
-    '''
+    
 
     n_epochs = config['architecture']['n_epochs']
     learning_rate = config['architecture']['learning_rate']

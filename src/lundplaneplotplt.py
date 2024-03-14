@@ -106,12 +106,12 @@ if __name__ == "__main__":
                 #all_lund_kts = np.append(all_lund_kts,lundkts[i] )
                 #all_lund_drs = np.append(all_lund_drs, lunddrs[i] )
                 #print("loop",i,"out of",len(lundzs),"completed")
-            print(all_lund_zs)
-            print("z-shape",all_lund_zs.shape)
-            print(all_lund_kts)
-            print("kts-shape",all_lund_kts.shape)
-            print(all_lund_drs)
-            print("drs-shape",all_lund_drs.shape)
+            #print(all_lund_zs)
+            #print("z-shape",all_lund_zs.shape)
+            #print(all_lund_kts)
+            #print("kts-shape",all_lund_kts.shape)
+            #print(all_lund_drs)
+            #print("drs-shape",all_lund_drs.shape)
             
     ln1z = np.log(1/all_lund_zs)
     lnkt = np.log(all_lund_kts)
@@ -125,21 +125,21 @@ if __name__ == "__main__":
     #Time for the plotting!!!!!
     #dr vs 1/z here
     plt.figure()
-    plt.hist2d(lnRDR, ln1z, bins = 40, range = [[0,5],[0,5]], cmap = 'viridis',vmin=1)
+    plt.hist2d(lnRDR, ln1z, bins = 80, range = [[0,5],[0,5]], cmap = 'viridis',cmin=1,norm = "log")
     plt.colorbar()
     plt.xlabel("ln(R/dR)")
     plt.ylabel("ln(1/z)")
 
-    filename_lund_z = path_to_save + "zlundplane"
+    filename_lund_z = path_to_save + "zlundplaneQCDbackg"
     plt.savefig(str(filename_lund_z))
     print("1/z lund plane generated!")
     #dr vs kt here
     plt.figure()
-    plt.hist2d(lnRDR, lnkt, bins = 40, range = [[0,5],[0,5]], cmap = 'viridis',vmin=1)
+    plt.hist2d(lnRDR, lnkt, bins = 80, range = [[0,5],[0,5]], cmap = 'viridis',cmin=1,norm = "log")
     plt.colorbar()
     plt.xlabel("ln(R/dR)")
     plt.ylabel("ln(kT)")
 
-    filename_lund_kt = path_to_save + "ktlundplane"
+    filename_lund_kt = path_to_save + "ktlundplaneQCDbackg"
     plt.savefig(str(filename_lund_kt))
     print("kt lund plane generated!")

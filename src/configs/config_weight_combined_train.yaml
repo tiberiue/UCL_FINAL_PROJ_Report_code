@@ -1,7 +1,7 @@
 data:
-  path_to_trainfiles: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Trainingfile/user.teris.10.1.tree.root_train.root"
+  path_to_trainfiles: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Trainingfile/user.teris.zprime*.tree.root_train.root"
   #"/eos/user/j/jzahredd/JetTagging/final/Train_Test_split_lxplus/*_train.root"  # /sps/atlas/k/khandoga/MySamplesS50/*_train.root
-  weights_file: "/afs/cern.ch/user/t/teris/ljptagger/flat_weights_tr.root"
+  weights_file: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/Trainingfile/flatweightsz.root"
   #"/afs/cern.ch/work/j/jzahredd/LJPTagger/ljptagger/final/flat_weights_tr.root"
   scale_factor: 14.475606
 
@@ -11,20 +11,20 @@ architecture:
   num_gaussians: 20
 
 classifier:
-  path_to_classifier_ckpt: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightcomb/combined_weighted_class_lambda30_lossp0.05_lrr1_s50e023_0.34879_comb_.pt"
+  path_to_classifier_ckpt: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightlundZ/LundNet_weighted_Z_3_e020_0.40263.pt"
   #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/LundNet_weighted_e060_0.27473.pt"
   choose_model: LundNet ## LundNet, GATNet, GINNet, EdgeGinNet, PNANet
 
 adversary:
-  path_to_adv_model_weights: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightcomb/combined_weighted_adv_class_lambda30_lossp0.05_lrr1e023_-0.42172_comb_.pt"
+  path_to_adv_model_weights: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightadvZ/adv_weighted_20e018_-20225.17151.pt"
   #/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/adv_weighted_e020_8.60403.pt"
 
 combined:
   lr_ratio: 4
-  lambda_parameter: 30
+  lambda_parameter: 20
   loss_parameter: 0.05
   lr_optimizer: 0.0005
-  n_epochs_common: 167
+  n_epochs_common: 200
   save_every_epoch: True
-  path_to_save_combined: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightcomb/"
+  path_to_save_combined: "/eos/user/t/tmlinare/Lund_tagger/ljptagger/Models/weightcombZ/"
   #"/afs/cern.ch/work/j/jzahredd/LJPTagger/gitlab/ljptagger/Models/"

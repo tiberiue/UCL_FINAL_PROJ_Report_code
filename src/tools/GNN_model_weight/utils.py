@@ -62,7 +62,7 @@ def GetPtWeight_2( dsid , pt, filename, SF):
 
     lenght_sig = len(flatweights_bg[0])
     lenght_bkg = len(flatweights_bg[0])
-    scale_factor = 14.475606
+    scale_factor = 1 #14.475606 temporary change to 1
     weight_out = []
     for i in range ( 0,len(dsid) ):
         pt_bin = int( (pt[i]/3000)*lenght_sig )
@@ -155,7 +155,7 @@ def create_train_dataset_fulld_new_Ntrk_pt_weight_file( graphs , z, k, d, edge1,
             edge = torch.tensor(np.array([edge1[i], edge2[i]]) , dtype=torch.long)
         vec = []
         vec.append(np.array([d[i], z[i], k[i]]).T)
-        vec = np.array(vec)
+        vec = np.array(vec) 
         vec = np.squeeze(vec)
 
         graphs.append(Data(x=torch.tensor(vec, dtype=torch.float).detach(), edge_index = torch.tensor(edge).detach() , Nconstituents=torch.tensor(Ntracks[i], dtype=torch.int).detach() ,pt=torch.tensor(jet_pts[i], dtype=torch.float).detach() , weights =torch.tensor(weight[i], dtype=torch.float).detach(), mass=torch.tensor(jet_ms[i], dtype=torch.float).detach() , y=torch.tensor(label[i], dtype=torch.float).detach() ))

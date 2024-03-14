@@ -132,9 +132,14 @@ if __name__ == "__main__":
                 all_lund_drs = tree["UFO_jetLundDeltaR"].array(library="np")
                 N_tracks = tree["UFO_Ntrk"].array(library="np")
                 jet_pts = tree["UFOSD_jetPt"].array(library="np")
-                labels = ( dsids > 370000 ) & ( NBHadrons == 0 )
+                #W boson labeling
+                #labels = ( dsids > 370000 ) & ( NBHadrons == 0 )
+                #Z boson labeling
+                labels = ( dsids > 370000 ) & ( NBHadrons >= 1 )
+                
                 labels = to_categorical(labels, 2)
                 labels = np.reshape(labels[:,1], (len(all_lund_zs), 1))
+                print (int(labels.sum()),"labeled as signal out of", len(labels), "total events")
                 flat_weights = GetPtWeight_2( dsids, jet_pts, filename=config['data']['weights_file'], SF=config['data']['scale_factor'])
                 dataset = create_train_dataset_fulld_new_Ntrk_pt_weight_file( dataset , all_lund_zs, all_lund_kts, all_lund_drs, parent1, parent2, flat_weights, labels ,N_tracks, jet_pts, jet_ms )
 
